@@ -1,0 +1,34 @@
+{
+  "name": "nextpress",
+  "version": "1.0.0",
+  "main": "built/index.js",
+  "dependencies": {
+    "@proerd/buildscript": "^1.1.1",
+    "@types/classnames": "^2.2.3",
+    "@types/dotenv": "^4.0.3",
+    "@types/next": "^2.4.11",
+    "@types/react": "^16.3.14",
+    "@types/react-dom": "^16.0.5",
+    "@types/react-redux": "^6.0.0",
+    "@types/styled-jsx": "^2.2.3",
+    "@types/yup": "^0.24.4",
+    "@zeit/next-css": "^0.2.0",
+    "@zeit/next-typescript": "^1.0.1",
+    "dotenv": "^5.0.1",
+    "fork-ts-checker-webpack-plugin": "^0.4.1",
+    "formik": "^0.11.11",
+    "next": "^6.0.3",
+    "ono": "^4.0.5",
+    "react": "^16.4.0",
+    "react-dom": "^16.4.0",
+    "react-redux": "^5.0.7",
+    "redutser": "^0.10.1",
+    "redux": "^4.0.0",
+    "spirit": "^0.6.1",
+    "spirit-router": "^0.5.0",
+    "yup": "^0.25.1"
+  },
+  "devDependencies": {
+    "typescript": "^2.8.3"
+  }
+}
