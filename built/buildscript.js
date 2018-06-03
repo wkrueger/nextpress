@@ -11,6 +11,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const build = require("@proerd/buildscript");
 const path_1 = require("path");
 const fs = require("fs");
+const libroot = path_1.resolve(__dirname, "..");
 function buildscript(projectRoot) {
     const tsPath = path_1.resolve(projectRoot, "node_modules", ".bin", "tsc");
     const tsConfigPath = path_1.resolve(projectRoot, "server", "tsconfig.json");
@@ -18,12 +19,18 @@ function buildscript(projectRoot) {
     const relativeTo = (to) => path_1.relative(projectRoot, to);
     const tasks = {
         scaffold() {
-            checkNCreate(["server", "tsconfig.json"], JSON.stringify(serverTsconfig, null, 2));
-            checkNCreate(["server", "index.ts"], "console.log('Hello world')");
-            checkNCreate(["pages", "index.ts"], "console.log('Hello world')");
-            checkNCreate(["static", "hello.txt"], "Use this folder to host static assets.");
-            checkNCreate([".babelrc"], JSON.stringify(babelRc, null, 2));
-            checkNCreate(["tsconfig.json"], JSON.stringify(clientTsConfig, null, 2));
+            checkNCreate(["server", "tsconfig.json"], () => JSON.stringify(serverTsconfig, null, 2));
+            checkNCreate(["server", "index.ts"], () => "console.log('Hello world')");
+            checkNCreate(["pages", "index.tsx"], () => "console.log('Hello world')");
+            checkNCreate(["app", "index.tsx"], () => "");
+            checkNCreate(["static", "hello.txt"], () => "Use this folder to host static assets.");
+            checkNCreate([".babelrc"], () => JSON.stringify(babelRc, null, 2));
+            checkNCreate(["tsconfig.json"], () => JSON.stringify(clientTsConfig, null, 2));
+            checkNCreate(["envfile.env"], () => "");
+            checkNCreate([".gitignore"], () => {
+                const gitscaff = fs.readFileSync(path_1.resolve(libroot, "src", "scaffolds", "gitignore.scaff.txt"));
+                return gitscaff;
+            });
         },
         watch() {
             return __awaiter(this, void 0, void 0, function* () {
@@ -62,7 +69,7 @@ function buildscript(projectRoot) {
             fs.statSync(filepath);
         }
         catch (err) {
-            fs.writeFileSync(filepath, content);
+            fs.writeFileSync(filepath, content());
         }
     }
 }

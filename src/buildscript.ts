@@ -1,6 +1,7 @@
 import * as build from "@proerd/buildscript"
 import { resolve, relative } from "path"
 import * as fs from "fs"
+const libroot = resolve(__dirname, "..")
 
 export function buildscript(projectRoot: string) {
   const tsPath = resolve(projectRoot, "node_modules", ".bin", "tsc")
@@ -10,12 +11,21 @@ export function buildscript(projectRoot: string) {
 
   const tasks = {
     scaffold() {
-      checkNCreate(["server", "tsconfig.json"], JSON.stringify(serverTsconfig, null, 2))
-      checkNCreate(["server", "index.ts"], "console.log('Hello world')")
-      checkNCreate(["pages", "index.ts"], "console.log('Hello world')")
-      checkNCreate(["static", "hello.txt"], "Use this folder to host static assets.")
-      checkNCreate([".babelrc"], JSON.stringify(babelRc, null, 2))
-      checkNCreate(["tsconfig.json"], JSON.stringify(clientTsConfig, null, 2))
+      checkNCreate(["server", "tsconfig.json"], () => JSON.stringify(serverTsconfig, null, 2))
+      checkNCreate(["server", "index.ts"], () => "console.log('Hello world')")
+      checkNCreate(["pages", "index.tsx"], () => "console.log('Hello world')")
+      checkNCreate(["app", "index.tsx"], () => "")
+      checkNCreate(["static", "hello.txt"], () => "Use this folder to host static assets.")
+      checkNCreate([".babelrc"], () => JSON.stringify(babelRc, null, 2))
+      checkNCreate(["tsconfig.json"], () => JSON.stringify(clientTsConfig, null, 2))
+      checkNCreate(["envfile.env"], () => "")
+
+      checkNCreate([".gitignore"], () => {
+        const gitscaff = fs.readFileSync(
+          resolve(libroot, "src", "scaffolds", "gitignore.scaff.txt"),
+        )
+        return gitscaff
+      })
     },
 
     async watch() {
@@ -35,7 +45,7 @@ export function buildscript(projectRoot: string) {
     tool: build,
   }
 
-  function checkNCreate(paths: string[], content: string) {
+  function checkNCreate(paths: string[], content: () => string | Buffer) {
     let folders = paths.slice(0, paths.length - 1)
     let it = 0
     let current = projectRoot
@@ -53,7 +63,7 @@ export function buildscript(projectRoot: string) {
     try {
       fs.statSync(filepath)
     } catch (err) {
-      fs.writeFileSync(filepath, content)
+      fs.writeFileSync(filepath, content())
     }
   }
 }
