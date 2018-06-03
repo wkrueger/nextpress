@@ -12,14 +12,15 @@ export function buildscript(projectRoot: string) {
   const tasks = {
     scaffold() {
       checkNCreate(["server", "tsconfig.json"], () => JSON.stringify(serverTsconfig, null, 2))
-      checkNCreate(["server", "index.ts"], () => "console.log('Hello world')")
+      checkNCreate(["server", "index.ts"], () =>
+        fs.readFileSync(resolve(libroot, "src", "scaffolds", "server-index.txt")),
+      )
       checkNCreate(["pages", "index.tsx"], () => "console.log('Hello world')")
       checkNCreate(["app", "index.tsx"], () => "")
       checkNCreate(["static", "hello.txt"], () => "Use this folder to host static assets.")
       checkNCreate([".babelrc"], () => JSON.stringify(babelRc, null, 2))
       checkNCreate(["tsconfig.json"], () => JSON.stringify(clientTsConfig, null, 2))
       checkNCreate(["envfile.env"], () => "")
-
       checkNCreate([".gitignore"], () => {
         const gitscaff = fs.readFileSync(
           resolve(libroot, "src", "scaffolds", "gitignore.scaff.txt"),
@@ -31,10 +32,7 @@ export function buildscript(projectRoot: string) {
     async watch() {
       tasks.scaffold()
       await build.spawn(`${tsPath} -p ${relativeTo(serverTsConfigPath)}`)
-      await Promise.all([
-        build.spawn(`${tsPath} -p ${relativeTo(serverTsConfigPath)} -w`),
-        build.spawn(`node ${relativeTo(serverPath)}`),
-      ])
+      build.spawn(`node ${relativeTo(serverPath)}`)
     },
   }
 

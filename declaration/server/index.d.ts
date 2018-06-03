@@ -7,8 +7,11 @@ declare class Server {
     ctx: Nextpress.Context;
     constructor(ctx: Nextpress.Context);
     errorRoute: string;
-    routeSetup(app: ExpressApp, helper: RouteSetupHelper): Promise<void>;
     nextApp: nextjs.Server;
+    /**
+     * this is meant to be overriden
+     */
+    routeSetup(app: ExpressApp, helper: RouteSetupHelper): Promise<void>;
     /**
      * all set, run
      */
@@ -17,6 +20,9 @@ declare class Server {
      * the next.config.js
      */
     nextConfig(): any;
+    /**
+     * helpers available on the routeSetup method
+     */
     _routeSetupHelper(): {
         htmlRoutes(fn: (h: {
             router: express.Router;

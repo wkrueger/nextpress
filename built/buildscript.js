@@ -20,7 +20,7 @@ function buildscript(projectRoot) {
     const tasks = {
         scaffold() {
             checkNCreate(["server", "tsconfig.json"], () => JSON.stringify(serverTsconfig, null, 2));
-            checkNCreate(["server", "index.ts"], () => "console.log('Hello world')");
+            checkNCreate(["server", "index.ts"], () => fs.readFileSync(path_1.resolve(libroot, "src", "scaffolds", "server-index.txt")));
             checkNCreate(["pages", "index.tsx"], () => "console.log('Hello world')");
             checkNCreate(["app", "index.tsx"], () => "");
             checkNCreate(["static", "hello.txt"], () => "Use this folder to host static assets.");
@@ -36,10 +36,7 @@ function buildscript(projectRoot) {
             return __awaiter(this, void 0, void 0, function* () {
                 tasks.scaffold();
                 yield build.spawn(`${tsPath} -p ${relativeTo(serverTsConfigPath)}`);
-                yield Promise.all([
-                    build.spawn(`${tsPath} -p ${relativeTo(serverTsConfigPath)} -w`),
-                    build.spawn(`node ${relativeTo(serverPath)}`),
-                ]);
+                build.spawn(`node ${relativeTo(serverPath)}`);
             });
         },
     };

@@ -28,6 +28,9 @@ class Server {
             conf: this.nextConfig(),
         });
     }
+    /**
+     * this is meant to be overriden
+     */
     routeSetup(app, helper) {
         return __awaiter(this, void 0, void 0, function* () { });
     }
@@ -39,12 +42,15 @@ class Server {
             yield this.nextApp.prepare();
             const expressApp = express();
             expressApp.use(morgan("short"));
-            const StoreConstructor = mysqlSession(expressSession);
-            const mysqlStore = new StoreConstructor({
-                user: this.ctx.database.user,
-                password: this.ctx.database.password,
-                database: this.ctx.database.name,
-            });
+            let store = undefined;
+            if (this.ctx.database) {
+                const StoreConstructor = mysqlSession(expressSession);
+                store = new StoreConstructor({
+                    user: this.ctx.database.user,
+                    password: this.ctx.database.password,
+                    database: this.ctx.database.name,
+                });
+            }
             const sessionMw = expressSession({
                 secret: this.ctx.website.sessionSecret,
                 cookie: {
@@ -52,7 +58,7 @@ class Server {
                 },
                 resave: false,
                 saveUninitialized: false,
-                store: mysqlStore,
+                store,
             });
             //fixme optional and scoped middleware
             expressApp.use(sessionMw);
@@ -77,6 +83,9 @@ class Server {
         };
         return withCSS(withTypescript(opts));
     }
+    /**
+     * helpers available on the routeSetup method
+     */
     _routeSetupHelper() {
         let that = this;
         const tryMw = (fn) => (req, res, next) => __awaiter(this, void 0, void 0, function* () {

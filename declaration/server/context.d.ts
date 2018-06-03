@@ -13,18 +13,28 @@ export declare const defaultPlugins: {
             };
         };
     };
+    sql: {
+        envKeys: string[];
+        envContext(): {
+            database: {
+                name: string;
+                user: string;
+                password: string;
+            };
+        };
+    };
 };
-export default function <Plugin extends ContextPlugin>(i: {
+export default function (i: {
     requiredKeys?: string[];
     projectRoot: string;
     customContext?: () => Nextpress.CustomContext;
-    plugins?: Plugin[];
+    plugins?: ContextPlugin[];
 }): Nextpress.Context;
 declare global {
     namespace Nextpress {
         interface DefaultContext {
             projectRoot: string;
-            database: {
+            database?: {
                 name: string;
                 user: string;
                 password: string;

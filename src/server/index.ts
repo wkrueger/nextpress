@@ -14,13 +14,16 @@ class Server {
 
   errorRoute = "/error"
 
-  async routeSetup(app: ExpressApp, helper: RouteSetupHelper): Promise<void> {}
-
   nextApp = nextjs({
     dev: process.env.NODE_ENV !== "production",
     dir: this.ctx.projectRoot,
     conf: this.nextConfig(),
   })
+
+  /**
+   * this is meant to be overriden
+   */
+  async routeSetup(app: ExpressApp, helper: RouteSetupHelper): Promise<void> {}
 
   /**
    * all set, run
@@ -29,12 +32,15 @@ class Server {
     await this.nextApp.prepare()
     const expressApp = express()
     expressApp.use(morgan("short"))
-    const StoreConstructor = (mysqlSession as any)(expressSession)
-    const mysqlStore = new StoreConstructor({
-      user: this.ctx.database.user,
-      password: this.ctx.database.password,
-      database: this.ctx.database.name,
-    })
+    let store: any = undefined
+    if (this.ctx.database) {
+      const StoreConstructor = (mysqlSession as any)(expressSession)
+      store = new StoreConstructor({
+        user: this.ctx.database.user,
+        password: this.ctx.database.password,
+        database: this.ctx.database.name,
+      })
+    }
     const sessionMw = expressSession({
       secret: this.ctx.website.sessionSecret,
       cookie: {
@@ -42,7 +48,7 @@ class Server {
       },
       resave: false,
       saveUninitialized: false,
-      store: mysqlStore,
+      store,
     })
     //fixme optional and scoped middleware
     expressApp.use(sessionMw)
@@ -70,6 +76,9 @@ class Server {
     return withCSS(withTypescript(opts))
   }
 
+  /**
+   * helpers available on the routeSetup method
+   */
   _routeSetupHelper() {
     let that = this
     type RouteHelper = {

@@ -1,0 +1,14 @@
+import path = require("path")
+import { Server, ContextFactory } from "nextpress"
+
+const context = ContextFactory({
+  projectRoot: path.resolve(__dirname, '..')
+})
+
+const server = new Server(context)
+
+server.routeSetup = async (app, setup) => {
+  app.use(setup.nextMw)
+}
+
+server.run()

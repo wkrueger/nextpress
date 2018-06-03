@@ -16,13 +16,25 @@ exports.defaultPlugins = {
             };
         },
     },
+    sql: {
+        envKeys: ["DB_NAME", "DB_USER", "DB_PASS"],
+        envContext() {
+            return {
+                database: {
+                    name: process.env.DB_NAME,
+                    user: process.env.DB_USER,
+                    password: process.env.DB_PASS,
+                },
+            };
+        },
+    },
 };
 function default_1(i) {
     const pluginKeys = (i.plugins || []).reduce((out, item) => {
         return [...out, ...item.envKeys];
     }, []);
     const required = [
-        ...["WEBSITE_ROOT", "WEBSITE_PORT", "WEBSITE_SESSION_SECRET", "DB_NAME", "DB_USER", "DB_PASS"],
+        ...["WEBSITE_ROOT", "WEBSITE_PORT", "WEBSITE_SESSION_SECRET"],
         ...pluginKeys,
         ...(i.requiredKeys || []),
     ];
@@ -50,11 +62,6 @@ function default_1(i) {
             root: process.env.WEBSITE_ROOT,
             port: Number(process.env.WEBSITE_PORT),
             sessionSecret: process.env.WEBSITE_SESSION_SECRET,
-        },
-        database: {
-            name: process.env.DB_NAME,
-            user: process.env.DB_USER,
-            password: process.env.DB_PASS,
         },
     };
     const pluginContext = (i.plugins || []).reduce((out, item) => {
