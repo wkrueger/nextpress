@@ -5,7 +5,7 @@ const libroot = resolve(__dirname, "..")
 
 export function buildscript(projectRoot: string) {
   const tsPath = resolve(projectRoot, "node_modules", ".bin", "tsc")
-  const tsConfigPath = resolve(projectRoot, "server", "tsconfig.json")
+  const serverTsConfigPath = resolve(projectRoot, "server", "tsconfig.json")
   const serverPath = resolve(projectRoot, ".nextpress", "server", "index.js")
   const relativeTo = (to: string) => relative(projectRoot, to)
 
@@ -29,10 +29,10 @@ export function buildscript(projectRoot: string) {
     },
 
     async watch() {
-      this.scaffold()
-      await build.spawn(`${tsPath} -p ${relativeTo(tsConfigPath)}`)
+      tasks.scaffold()
+      await build.spawn(`${tsPath} -p ${relativeTo(serverTsConfigPath)}`)
       await Promise.all([
-        build.spawn(`${tsPath} -p ${relativeTo(tsConfigPath)} -w`),
+        build.spawn(`${tsPath} -p ${relativeTo(serverTsConfigPath)} -w`),
         build.spawn(`node ${relativeTo(serverPath)}`),
       ])
     },
@@ -74,7 +74,7 @@ const serverTsconfig = {
     target: "es6",
     module: "commonjs",
     moduleResolution: "node",
-    outDir: "../nextpress/server",
+    outDir: "../.nextpress",
     strict: true,
     noUnusedLocals: true,
   },
@@ -87,7 +87,6 @@ const clientTsConfig = {
     moduleResolution: "node",
     noUnusedLocals: true,
     skipDefaultLibCheck: true,
-    skipLibCheck: true,
     lib: ["es5", "dom", "es2015.promise"],
     jsx: "react",
     strict: true,

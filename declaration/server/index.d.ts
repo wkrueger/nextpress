@@ -1,6 +1,6 @@
 import nextjs = require("next");
 import express = require("express");
-export { default as ContextFactory } from "./context";
+export { default as ContextFactory, defaultPlugins as contextPlugins } from "./context";
 export declare type ExpressApp = ReturnType<typeof express>;
 export declare type RouteSetupHelper = ReturnType<typeof Server.prototype._routeSetupHelper>;
 declare class Server {

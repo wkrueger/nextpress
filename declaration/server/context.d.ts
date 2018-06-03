@@ -1,6 +1,6 @@
 export declare type ContextPlugin = {
-    envKeys: string;
-    envContext: <T>() => T;
+    envKeys: string[];
+    envContext: () => any;
 };
 export declare const defaultPlugins: {
     mailgun: {
@@ -14,12 +14,12 @@ export declare const defaultPlugins: {
         };
     };
 };
-export default function (i: {
+export default function <Plugin extends ContextPlugin>(i: {
     requiredKeys?: string[];
     projectRoot: string;
     customContext?: () => Nextpress.CustomContext;
-    plugins?: ContextPlugin[];
-}): Promise<Nextpress.Context>;
+    plugins?: Plugin[];
+}): Nextpress.Context;
 declare global {
     namespace Nextpress {
         interface DefaultContext {

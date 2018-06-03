@@ -1,9 +1,10 @@
 import dotenv = require("dotenv")
 import path = require("path")
+import fs = require("fs")
 
 export type ContextPlugin = {
-  envKeys: string
-  envContext: <T>() => T
+  envKeys: string[]
+  envContext: () => any
 }
 
 export const defaultPlugins = {
@@ -21,13 +22,12 @@ export const defaultPlugins = {
   },
 }
 
-export default async function(i: {
+export default function<Plugin extends ContextPlugin>(i: {
   requiredKeys?: string[]
   projectRoot: string
   customContext?: () => Nextpress.CustomContext
-  plugins?: ContextPlugin[]
+  plugins?: Plugin[]
 }) {
-  dotenv.config({ path: path.resolve(i.projectRoot, "envfile.env") })
   const pluginKeys = (i.plugins || []).reduce(
     (out, item) => {
       return [...out, ...item.envKeys]
@@ -39,6 +39,17 @@ export default async function(i: {
     ...pluginKeys,
     ...(i.requiredKeys || []),
   ]
+  const envfilePath = path.resolve(i.projectRoot, "envfile.env")
+  try {
+    fs.statSync(envfilePath)
+  } catch (err) {
+    const scaffold = required.reduce((out, item) => {
+      return out + `${item}=fill\n`
+    }, "")
+    fs.writeFileSync(envfilePath, scaffold)
+    throw Error("envfile not found. Fill up the generated one.")
+  }
+  dotenv.config({ path: path.resolve(i.projectRoot, "envfile.env") })
   for (let x = 0; x < required.length; x++) {
     const key = required[x]
     if (!process.env[key]) throw Error(`Required env key ${key} not defined.`)

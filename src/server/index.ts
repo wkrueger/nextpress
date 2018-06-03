@@ -4,7 +4,7 @@ import morgan = require("morgan")
 import expressSession = require("express-session")
 import mysqlSession = require("express-mysql-session")
 import { parse as urlparse } from "url"
-export { default as ContextFactory } from "./context"
+export { default as ContextFactory, defaultPlugins as contextPlugins } from "./context"
 
 export type ExpressApp = ReturnType<typeof express>
 export type RouteSetupHelper = ReturnType<typeof Server.prototype._routeSetupHelper>

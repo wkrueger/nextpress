@@ -17,6 +17,7 @@ const mysqlSession = require("express-mysql-session");
 const url_1 = require("url");
 var context_1 = require("./context");
 exports.ContextFactory = context_1.default;
+exports.contextPlugins = context_1.defaultPlugins;
 class Server {
     constructor(ctx) {
         this.ctx = ctx;

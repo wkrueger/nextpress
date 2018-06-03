@@ -1,2 +1,2 @@
 export { buildscript } from "./buildscript";
-export { nextjs, Server, ContextFactory } from "./server";
+export { nextjs, Server, ContextFactory, contextPlugins } from "./server";

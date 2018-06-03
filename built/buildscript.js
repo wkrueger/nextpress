@@ -14,7 +14,7 @@ const fs = require("fs");
 const libroot = path_1.resolve(__dirname, "..");
 function buildscript(projectRoot) {
     const tsPath = path_1.resolve(projectRoot, "node_modules", ".bin", "tsc");
-    const tsConfigPath = path_1.resolve(projectRoot, "server", "tsconfig.json");
+    const serverTsConfigPath = path_1.resolve(projectRoot, "server", "tsconfig.json");
     const serverPath = path_1.resolve(projectRoot, ".nextpress", "server", "index.js");
     const relativeTo = (to) => path_1.relative(projectRoot, to);
     const tasks = {
@@ -34,10 +34,10 @@ function buildscript(projectRoot) {
         },
         watch() {
             return __awaiter(this, void 0, void 0, function* () {
-                this.scaffold();
-                yield build.spawn(`${tsPath} -p ${relativeTo(tsConfigPath)}`);
+                tasks.scaffold();
+                yield build.spawn(`${tsPath} -p ${relativeTo(serverTsConfigPath)}`);
                 yield Promise.all([
-                    build.spawn(`${tsPath} -p ${relativeTo(tsConfigPath)} -w`),
+                    build.spawn(`${tsPath} -p ${relativeTo(serverTsConfigPath)} -w`),
                     build.spawn(`node ${relativeTo(serverPath)}`),
                 ]);
             });
@@ -80,7 +80,7 @@ const serverTsconfig = {
         target: "es6",
         module: "commonjs",
         moduleResolution: "node",
-        outDir: "../nextpress/server",
+        outDir: "../.nextpress",
         strict: true,
         noUnusedLocals: true,
     },
@@ -92,7 +92,6 @@ const clientTsConfig = {
         moduleResolution: "node",
         noUnusedLocals: true,
         skipDefaultLibCheck: true,
-        skipLibCheck: true,
         lib: ["es5", "dom", "es2015.promise"],
         jsx: "react",
         strict: true,
