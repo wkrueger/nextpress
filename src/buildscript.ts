@@ -27,11 +27,18 @@ export function buildscript(projectRoot: string) {
         )
         return gitscaff
       })
+      checkNCreate(["pages", "client-global.d.ts"], () =>
+        fs.readFileSync(resolve(libroot, "src", "scaffolds", "client-global-types.txt")),
+      )
     },
 
-    async watch() {
-      tasks.scaffold()
+    async compileServer() {
       await build.spawn(`${tsPath} -p ${relativeTo(serverTsConfigPath)}`)
+    },
+
+    async watchAll() {
+      tasks.scaffold()
+      await tasks.compileServer()
       build.spawn(`node ${relativeTo(serverPath)}`)
     },
   }
@@ -85,7 +92,7 @@ const clientTsConfig = {
     moduleResolution: "node",
     noUnusedLocals: true,
     skipDefaultLibCheck: true,
-    lib: ["es5", "dom", "es2015.promise"],
+    lib: ["es2015", "dom"],
     jsx: "react",
     strict: true,
     sourceMap: false,

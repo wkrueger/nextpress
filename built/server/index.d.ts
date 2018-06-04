@@ -1,3 +1,5 @@
+/// <reference types="express" />
+/// <reference types="next" />
 import nextjs = require("next");
 import express = require("express");
 export { default as ContextFactory, defaultPlugins as contextPlugins } from "./context";

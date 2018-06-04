@@ -13,7 +13,7 @@ export declare const defaultPlugins: {
             };
         };
     };
-    sql: {
+    database: {
         envKeys: string[];
         envContext(): {
             database: {
@@ -30,16 +30,16 @@ export default function (i: {
     customContext?: () => Nextpress.CustomContext;
     plugins?: ContextPlugin[];
 }): Nextpress.Context;
-declare global {
+declare global  {
     namespace Nextpress {
         interface DefaultContext {
             projectRoot: string;
-            database?: {
+            database: {
                 name: string;
                 user: string;
                 password: string;
             };
-            mailgun?: {
+            mailgun: {
                 from: string;
                 domain: string;
                 apiKey: string;

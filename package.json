@@ -1,7 +1,8 @@
 {
   "name": "nextpress",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "main": "built/index.js",
+  "typings": "built/index.d.ts",
   "dependencies": {
     "@proerd/buildscript": "^1.1.1",
     "@types/classnames": "^2.2.3",
@@ -25,7 +26,7 @@
     "fork-ts-checker-webpack-plugin": "^0.4.1",
     "formik": "^0.11.11",
     "morgan": "^1.9.0",
-    "next": "^6.0.3",
+    "next": "^6.0.4-canary.3",
     "ono": "^4.0.5",
     "react": "^16.4.0",
     "react-dom": "^16.4.0",
@@ -35,6 +36,9 @@
     "yup": "^0.25.1"
   },
   "devDependencies": {
-    "typescript": "^2.8.3"
+    "typescript": "2.8"
+  },
+  "scripts": {
+    "tsc": "tsc"
   }
 }

@@ -4,7 +4,6 @@
     "module": "commonjs",
     "outDir": "built",
     "declaration": true,
-    "declarationDir": "declaration",
     "sourceMap": true,
     "strict": true,
     "noUnusedLocals": true

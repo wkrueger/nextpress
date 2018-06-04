@@ -31,11 +31,17 @@ function buildscript(projectRoot) {
                 const gitscaff = fs.readFileSync(path_1.resolve(libroot, "src", "scaffolds", "gitignore.scaff.txt"));
                 return gitscaff;
             });
+            checkNCreate(["pages", "client-global.d.ts"], () => fs.readFileSync(path_1.resolve(libroot, "src", "scaffolds", "client-global-types.txt")));
         },
-        watch() {
+        compileServer() {
+            return __awaiter(this, void 0, void 0, function* () {
+                yield build.spawn(`${tsPath} -p ${relativeTo(serverTsConfigPath)}`);
+            });
+        },
+        watchAll() {
             return __awaiter(this, void 0, void 0, function* () {
                 tasks.scaffold();
-                yield build.spawn(`${tsPath} -p ${relativeTo(serverTsConfigPath)}`);
+                yield tasks.compileServer();
                 build.spawn(`node ${relativeTo(serverPath)}`);
             });
         },
@@ -89,7 +95,7 @@ const clientTsConfig = {
         moduleResolution: "node",
         noUnusedLocals: true,
         skipDefaultLibCheck: true,
-        lib: ["es5", "dom", "es2015.promise"],
+        lib: ["es2015", "dom"],
         jsx: "react",
         strict: true,
         sourceMap: false,

@@ -53,7 +53,7 @@ class Server {
     //fixme optional and scoped middleware
     expressApp.use(sessionMw)
     await this.routeSetup(expressApp, this._routeSetupHelper())
-    expressApp.listen(this.ctx.website.port, () => this.ctx.website.port)
+    expressApp.listen(this.ctx.website.port, () => console.log(this.ctx.website.port))
   }
 
   /**

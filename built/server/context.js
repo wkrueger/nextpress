@@ -16,7 +16,7 @@ exports.defaultPlugins = {
             };
         },
     },
-    sql: {
+    database: {
         envKeys: ["DB_NAME", "DB_USER", "DB_PASS"],
         envContext() {
             return {
@@ -63,6 +63,8 @@ function default_1(i) {
             port: Number(process.env.WEBSITE_PORT),
             sessionSecret: process.env.WEBSITE_SESSION_SECRET,
         },
+        database: undefined,
+        mailgun: undefined,
     };
     const pluginContext = (i.plugins || []).reduce((out, item) => {
         return Object.assign({}, out, item.envContext());

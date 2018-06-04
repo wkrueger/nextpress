@@ -20,7 +20,7 @@ export const defaultPlugins = {
       }
     },
   },
-  sql: {
+  database: {
     envKeys: ["DB_NAME", "DB_USER", "DB_PASS"],
     envContext() {
       return {
@@ -74,6 +74,8 @@ export default function(i: {
       port: Number(process.env.WEBSITE_PORT!),
       sessionSecret: process.env.WEBSITE_SESSION_SECRET!,
     },
+    database: undefined as any,
+    mailgun: undefined as any,
   }
   const pluginContext = (i.plugins || []).reduce(
     (out, item) => {
@@ -95,12 +97,12 @@ declare global {
   namespace Nextpress {
     interface DefaultContext {
       projectRoot: string
-      database?: {
+      database: {
         name: string
         user: string
         password: string
       }
-      mailgun?: {
+      mailgun: {
         from: string
         domain: string
         apiKey: string
