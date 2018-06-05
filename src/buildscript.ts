@@ -6,7 +6,7 @@ const libroot = resolve(__dirname, "..")
 export function buildscript(projectRoot: string) {
   const tsPath = resolve(projectRoot, "node_modules", ".bin", "tsc")
   const serverTsConfigPath = resolve(projectRoot, "server", "tsconfig.json")
-  const serverPath = resolve(projectRoot, ".nextpress", "server", "index.js")
+  //const serverPath = resolve(projectRoot, ".nextpress", "server", "index.js")
   const relativeTo = (to: string) => relative(projectRoot, to)
 
   const tasks = {
@@ -33,13 +33,7 @@ export function buildscript(projectRoot: string) {
     },
 
     async compileServer() {
-      await build.spawn(`${tsPath} -p ${relativeTo(serverTsConfigPath)}`)
-    },
-
-    async watchAll() {
-      tasks.scaffold()
-      await tasks.compileServer()
-      build.spawn(`node ${relativeTo(serverPath)}`)
+      await build.spawn(`${tsPath} -p ${relativeTo(serverTsConfigPath)} -w`)
     },
   }
 

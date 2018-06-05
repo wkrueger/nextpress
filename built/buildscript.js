@@ -15,7 +15,7 @@ const libroot = path_1.resolve(__dirname, "..");
 function buildscript(projectRoot) {
     const tsPath = path_1.resolve(projectRoot, "node_modules", ".bin", "tsc");
     const serverTsConfigPath = path_1.resolve(projectRoot, "server", "tsconfig.json");
-    const serverPath = path_1.resolve(projectRoot, ".nextpress", "server", "index.js");
+    //const serverPath = resolve(projectRoot, ".nextpress", "server", "index.js")
     const relativeTo = (to) => path_1.relative(projectRoot, to);
     const tasks = {
         scaffold() {
@@ -35,14 +35,7 @@ function buildscript(projectRoot) {
         },
         compileServer() {
             return __awaiter(this, void 0, void 0, function* () {
-                yield build.spawn(`${tsPath} -p ${relativeTo(serverTsConfigPath)}`);
-            });
-        },
-        watchAll() {
-            return __awaiter(this, void 0, void 0, function* () {
-                tasks.scaffold();
-                yield tasks.compileServer();
-                build.spawn(`node ${relativeTo(serverPath)}`);
+                yield build.spawn(`${tsPath} -p ${relativeTo(serverTsConfigPath)} -w`);
             });
         },
     };

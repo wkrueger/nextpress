@@ -2,14 +2,16 @@ import dotenv = require("dotenv")
 import path = require("path")
 import fs = require("fs")
 
-export type ContextPlugin = {
+export type ContextMapper = {
   envKeys: string[]
+  optionalKeys: string[]
   envContext: () => any
 }
 
-export const defaultPlugins = {
+export const defaultMappers = {
   mailgun: {
     envKeys: ["MAILGUN_FROM", "MAILGUN_DOMAIN", "MAILGUN_API_KEY"],
+    optionalKeys: [] as string[],
     envContext() {
       return {
         mailgun: {
@@ -22,6 +24,7 @@ export const defaultPlugins = {
   },
   database: {
     envKeys: ["DB_NAME", "DB_USER", "DB_PASS"],
+    optionalKeys: [] as string[],
     envContext() {
       return {
         database: {
@@ -34,23 +37,23 @@ export const defaultPlugins = {
   },
 }
 
-export default function(i: {
-  requiredKeys?: string[]
-  projectRoot: string
-  customContext?: () => Nextpress.CustomContext
-  plugins?: ContextPlugin[]
-}) {
-  const pluginKeys = (i.plugins || []).reduce(
+export default function(i: { projectRoot: string; mappers: ContextMapper[] }) {
+  const pluginKeys = (i.mappers || []).reduce(
     (out, item) => {
       return [...out, ...item.envKeys]
+    },
+    [] as string[],
+  )
+  const pluginOptional = (i.mappers || []).reduce(
+    (out, item) => {
+      return [...out, ...item.optionalKeys]
     },
     [] as string[],
   )
   const required = [
     ...["WEBSITE_ROOT", "WEBSITE_PORT", "WEBSITE_SESSION_SECRET"],
     ...pluginKeys,
-    ...(i.requiredKeys || []),
-  ]
+  ].filter(k => pluginOptional.indexOf(k) === -1)
   const envfilePath = path.resolve(i.projectRoot, "envfile.env")
   try {
     fs.statSync(envfilePath)
@@ -66,7 +69,6 @@ export default function(i: {
     const key = required[x]
     if (!process.env[key]) throw Error(`Required env key ${key} not defined.`)
   }
-  const customContext = i.customContext ? i.customContext() : {}
   const defaultContext: Nextpress.DefaultContext = {
     projectRoot: i.projectRoot,
     website: {
@@ -77,7 +79,7 @@ export default function(i: {
     database: undefined as any,
     mailgun: undefined as any,
   }
-  const pluginContext = (i.plugins || []).reduce(
+  const pluginContext = (i.mappers || []).reduce(
     (out, item) => {
       return {
         ...out,
@@ -89,7 +91,6 @@ export default function(i: {
   return {
     ...defaultContext,
     ...pluginContext,
-    ...customContext,
   } as Nextpress.Context
 }
 

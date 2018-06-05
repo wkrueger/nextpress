@@ -3,9 +3,10 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const dotenv = require("dotenv");
 const path = require("path");
 const fs = require("fs");
-exports.defaultPlugins = {
+exports.defaultMappers = {
     mailgun: {
         envKeys: ["MAILGUN_FROM", "MAILGUN_DOMAIN", "MAILGUN_API_KEY"],
+        optionalKeys: [],
         envContext() {
             return {
                 mailgun: {
@@ -18,6 +19,7 @@ exports.defaultPlugins = {
     },
     database: {
         envKeys: ["DB_NAME", "DB_USER", "DB_PASS"],
+        optionalKeys: [],
         envContext() {
             return {
                 database: {
@@ -30,14 +32,16 @@ exports.defaultPlugins = {
     },
 };
 function default_1(i) {
-    const pluginKeys = (i.plugins || []).reduce((out, item) => {
+    const pluginKeys = (i.mappers || []).reduce((out, item) => {
         return [...out, ...item.envKeys];
+    }, []);
+    const pluginOptional = (i.mappers || []).reduce((out, item) => {
+        return [...out, ...item.optionalKeys];
     }, []);
     const required = [
         ...["WEBSITE_ROOT", "WEBSITE_PORT", "WEBSITE_SESSION_SECRET"],
         ...pluginKeys,
-        ...(i.requiredKeys || []),
-    ];
+    ].filter(k => pluginOptional.indexOf(k) === -1);
     const envfilePath = path.resolve(i.projectRoot, "envfile.env");
     try {
         fs.statSync(envfilePath);
@@ -55,7 +59,6 @@ function default_1(i) {
         if (!process.env[key])
             throw Error(`Required env key ${key} not defined.`);
     }
-    const customContext = i.customContext ? i.customContext() : {};
     const defaultContext = {
         projectRoot: i.projectRoot,
         website: {
@@ -66,10 +69,10 @@ function default_1(i) {
         database: undefined,
         mailgun: undefined,
     };
-    const pluginContext = (i.plugins || []).reduce((out, item) => {
+    const pluginContext = (i.mappers || []).reduce((out, item) => {
         return Object.assign({}, out, item.envContext());
     }, {});
-    return Object.assign({}, defaultContext, pluginContext, customContext);
+    return Object.assign({}, defaultContext, pluginContext);
 }
 exports.default = default_1;
 //# sourceMappingURL=context.js.map

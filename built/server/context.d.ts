@@ -1,10 +1,12 @@
-export declare type ContextPlugin = {
+export declare type ContextMapper = {
     envKeys: string[];
+    optionalKeys: string[];
     envContext: () => any;
 };
-export declare const defaultPlugins: {
+export declare const defaultMappers: {
     mailgun: {
         envKeys: string[];
+        optionalKeys: string[];
         envContext(): {
             mailgun: {
                 from: string | undefined;
@@ -15,6 +17,7 @@ export declare const defaultPlugins: {
     };
     database: {
         envKeys: string[];
+        optionalKeys: string[];
         envContext(): {
             database: {
                 name: string;
@@ -25,10 +28,8 @@ export declare const defaultPlugins: {
     };
 };
 export default function (i: {
-    requiredKeys?: string[];
     projectRoot: string;
-    customContext?: () => Nextpress.CustomContext;
-    plugins?: ContextPlugin[];
+    mappers: ContextMapper[];
 }): Nextpress.Context;
 declare global  {
     namespace Nextpress {
