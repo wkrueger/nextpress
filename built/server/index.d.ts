@@ -2,7 +2,8 @@
 /// <reference types="next" />
 import nextjs = require("next");
 import express = require("express");
-export { default as ContextFactory, defaultMappers as contextPlugins } from "./context";
+import yup = require("yup");
+export { default as ContextFactory, defaultMappers } from "./context";
 export declare type ExpressApp = ReturnType<typeof express>;
 export declare type RouteSetupHelper = ReturnType<typeof Server.prototype._routeSetupHelper>;
 declare class Server {
@@ -32,16 +33,23 @@ declare class Server {
         tryMw: (fn: (req: express.Request, res: express.Response) => void | Promise<void>) => (req: express.Request, res: express.Response, next: express.NextFunction) => Promise<void>;
         nextApp: nextjs.Server;
         nextMw: (req: express.Request, res: express.Response, next: express.NextFunction) => Promise<void>;
-        jsonRouteDict: (router: express.Router, routeDict: {
-            [k: string]: RouteDictItem;
-        }) => void;
-        withMethod: (method: string, item: RouteDictItem) => RouteDictItem;
-        withMiddleware: (mw: express.RequestHandler[], item: RouteDictItem) => RouteDictItem;
+        jsonRouteDict: <Dict extends {
+            [k: string]: RouteDictItem<{}>;
+        }>(router: express.Router, routeDict: Dict) => void;
+        withMethod: (method: string, item: RouteDictItem<{}>) => RouteDictItem<{}>;
+        withMiddleware: (mw: express.RequestHandler[], item: RouteDictItem<{}>) => RouteDictItem<{}>;
+        withValidation: <What extends {
+            body?: yup.ObjectSchema<any> | undefined;
+            params?: yup.ObjectSchema<any> | undefined;
+            query?: yup.ObjectSchema<any> | undefined;
+        }>(what: What, item: RouteDictItem<{ [k in keyof What]: What[k] extends yup.ObjectSchema<infer R> ? R : never; }>) => RouteDictItem<{}>;
+        yup: typeof yup;
     };
     jsonErrorHandler: express.ErrorRequestHandler;
 }
-export interface RouteDictItem {
-    (req: express.Request): Promise<{
+export declare type Omit<T, K> = Pick<T, Exclude<keyof T, K>>;
+export interface RouteDictItem<Replace = {}> {
+    (req: Omit<express.Request, keyof Replace> & Replace): Promise<{
         [r: string]: any;
     }>;
     method?: string;

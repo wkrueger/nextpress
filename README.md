@@ -11,6 +11,8 @@ Currently bundling:
 - front-end reacty common things (react, react-dom, redux, redutser, formik...)
 - all with typescript in mind
 
+Trying not to worry much about config options, it is of intention to have one big monolythic package.
+
 ## scaffolding
 
 ```
@@ -33,6 +35,8 @@ node build scaffold
 Also currently available:
 
 - `node build compileServer` (typescript watch task for the server code)
+
+There will be two `tsconfig.json`s around. The one on the root is invoked by next.js when you start the server. The one inside the `server` folder needs to be manually built.
 
 Server (compiled) will be available at `./nextpress/index.js`. The first time you run it it may complain something and create an `envfile.env` which you should edit.
 
@@ -73,9 +77,9 @@ ContextFactory(i: {
 }): Nextpress.Context
 ```
 
-A "context mapper" describes the mapping from the `env` keys to the resulting object. A couple of `defaultMappers` are provided.
+A "context mapper" describes the mapping from the `env` keys to the resulting object. A couple of default `defaultMappers` are provided.
 
-The context type if globally defined in `Nextpress.Context`, and shall be declaration-merged through `Nextpress.CustomContext` when necessary.
+The context type is globally defined in `Nextpress.Context`, and shall be declaration-merged through `Nextpress.CustomContext` when necessary.
 
 ```typescript
 declare global {
@@ -115,10 +119,30 @@ Adding routes must be done inside this. `helper` comes with a couple of predefin
 
 Ex
 
-- htmlRoutes (create an next.js-y router, required middleware is already included, just set up the routes)
-- jsonRoutes (same thing, but for json apis)
+- htmlRoutes (create an express router with includes next.js, required middleware and next.js is already included, just set up the additional routes)
+- jsonRoutes (express router for json apis, common middleware already included)
 
 The 2 methods above RETURN a router, you still has to write `app.use(router)` to bind it to the main express instance.
+
+```js
+{
+  tryMw,
+  /** a reference to the next.js app, which has the renderer */
+  nextApp: this.nextApp,
+  /** next.js default middleware */
+  nextMw,
+  /** declare json routes in a simplified way */
+  jsonRouteDict,
+  /** for use on jsonRouteDict - set http method, default is POST */
+  withMethod,
+  /** for use on jsonRouteDict - run middleware before */
+  withMiddleware,
+  /** for use on jsonRouteDict - validate with yup before */
+  withValidation,
+  /** yup link for creating validation rules */
+  yup,
+}
+```
 
 Cut-down sample:
 
@@ -161,4 +185,4 @@ all of the rest
 
 ## Big fat caveat
 
-Modules/dependencies are currently a mess, this probably works only with yarn since it relies on the flat `node_modules` structure.
+Modules/dependencies currently rely on yarn, will prob not work under npm or pnpm.

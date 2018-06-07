@@ -5,7 +5,8 @@ import expressSession = require("express-session")
 import mysqlSession = require("express-mysql-session")
 import { parse as urlparse } from "url"
 import ono = require("ono")
-export { default as ContextFactory, defaultMappers as contextPlugins } from "./context"
+import yup = require("yup")
+export { default as ContextFactory, defaultMappers } from "./context"
 
 export type ExpressApp = ReturnType<typeof express>
 export type RouteSetupHelper = ReturnType<typeof Server.prototype._routeSetupHelper>
@@ -138,6 +139,9 @@ class Server {
       withMethod,
       /** for use on jsonRouteDict */
       withMiddleware,
+      /** for use on jsonRouteDict */
+      withValidation,
+      yup,
     }
   }
 
@@ -172,8 +176,9 @@ const tryMw = (fn: (req: express.Request, res: express.Response) => void | Promi
   }
 }
 
-export interface RouteDictItem {
-  (req: express.Request): Promise<{ [r: string]: any }>
+export type Omit<T, K> = Pick<T, Exclude<keyof T, K>>
+export interface RouteDictItem<Replace = {}> {
+  (req: Omit<express.Request, keyof Replace> & Replace): Promise<{ [r: string]: any }>
   method?: string
   middleware?: express.RequestHandler[]
 }
@@ -182,7 +187,7 @@ type RouteDict = {
   [k: string]: RouteDictItem
 }
 
-function jsonRouteDict(router: express.Router, routeDict: RouteDict) {
+function jsonRouteDict<Dict extends RouteDict>(router: express.Router, routeDict: Dict) {
   Object.keys(routeDict).forEach(key => {
     let item = routeDict[key]
     let method: "get" | "post" | "put" | "delete" = item.method || ("post" as any)
@@ -198,14 +203,44 @@ function jsonRouteDict(router: express.Router, routeDict: RouteDict) {
   })
 }
 
+/**
+ * (for a given RouteItem) Sets another http method than the default
+ */
 function withMethod(method: string, item: RouteDictItem): RouteDictItem {
   item.method = method
   return item
 }
 
+/**
+ * (for a given route item) Adds middleware to be run before
+ */
 function withMiddleware(mw: express.RequestHandler[], item: RouteDictItem): RouteDictItem {
   item.middleware = mw
   return item
+}
+
+type UnwrapSchema<T> = T extends yup.ObjectSchema<infer R> ? R : never
+type SchemaDict = { [k in "query" | "params" | "body"]?: yup.ObjectSchema<any> }
+
+type UnwrapSchemaDict<T extends SchemaDict> = { [k in keyof T]: UnwrapSchema<T[k]> }
+
+/**
+ * (for a given route item) Validates query and/or params with the provided rules.
+ */
+function withValidation<What extends SchemaDict>(
+  what: What,
+  item: RouteDictItem<UnwrapSchemaDict<What>>,
+): RouteDictItem {
+  let fn: any = (req: express.Request) => {
+    if (what.query) req.query = what.query.validateSync(req.query)
+    if (what.params) req.params = what.params.validateSync(req.params)
+    if (what.body) req.body = what.body.validateSync(req.body)
+    return item(req as any)
+  }
+  Object.keys(item).forEach(key => {
+    fn[key] = (item as any)[key]
+  })
+  return fn
 }
 
 export { Server, nextjs }

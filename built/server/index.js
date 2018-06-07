@@ -16,9 +16,10 @@ const expressSession = require("express-session");
 const mysqlSession = require("express-mysql-session");
 const url_1 = require("url");
 const ono = require("ono");
+const yup = require("yup");
 var context_1 = require("./context");
 exports.ContextFactory = context_1.default;
-exports.contextPlugins = context_1.defaultMappers;
+exports.defaultMappers = context_1.defaultMappers;
 class Server {
     constructor(ctx) {
         this.ctx = ctx;
@@ -166,6 +167,9 @@ class Server {
             withMethod,
             /** for use on jsonRouteDict */
             withMiddleware,
+            /** for use on jsonRouteDict */
+            withValidation,
+            yup,
         };
     }
 }
@@ -189,12 +193,36 @@ function jsonRouteDict(router, routeDict) {
         })));
     });
 }
+/**
+ * (for a given RouteItem) Sets another http method than the default
+ */
 function withMethod(method, item) {
     item.method = method;
     return item;
 }
+/**
+ * (for a given route item) Adds middleware to be run before
+ */
 function withMiddleware(mw, item) {
     item.middleware = mw;
     return item;
+}
+/**
+ * (for a given route item) Validates query and/or params with the provided rules.
+ */
+function withValidation(what, item) {
+    let fn = (req) => {
+        if (what.query)
+            req.query = what.query.validateSync(req.query);
+        if (what.params)
+            req.params = what.params.validateSync(req.params);
+        if (what.body)
+            req.body = what.body.validateSync(req.body);
+        return item(req);
+    };
+    Object.keys(item).forEach(key => {
+        fn[key] = item[key];
+    });
+    return fn;
 }
 //# sourceMappingURL=index.js.map

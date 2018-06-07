@@ -6,7 +6,7 @@
     "declaration": true,
     "sourceMap": true,
     "strict": true,
-    "noUnusedLocals": true
+    "jsx": "react"
   },
   "include": ["src"]
 }
