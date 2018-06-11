@@ -12,7 +12,11 @@ export type ExpressApp = ReturnType<typeof express>
 export type RouteSetupHelper = ReturnType<typeof Server.prototype._routeSetupHelper>
 
 class Server {
-  constructor(public ctx: Nextpress.Context) {}
+  constructor(public ctx: Nextpress.Context) {
+    if (!ctx.loadedContexts.has('default.website')) {
+      throw Error('Server required the default.website context to be used.')
+    }
+  }
 
   errorRoute = "/error"
 
@@ -40,7 +44,9 @@ class Server {
   async run() {
     await this.nextApp.prepare()
     const expressApp = express()
-    expressApp.use(morgan("short"))
+    if (this.ctx.website.logRequests) {
+      expressApp.use(morgan("short"))  
+    }
     let store: any = undefined
     if (this.ctx.database) {
       const StoreConstructor = (mysqlSession as any)(expressSession)

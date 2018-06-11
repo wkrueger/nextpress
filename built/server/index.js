@@ -43,6 +43,9 @@ class Server {
                 next(err);
             }
         };
+        if (!ctx.loadedContexts.has('default.website')) {
+            throw Error('Server required the default.website context to be used.');
+        }
     }
     get nextApp() {
         if (!this._nextApp)
@@ -68,7 +71,9 @@ class Server {
         return __awaiter(this, void 0, void 0, function* () {
             yield this.nextApp.prepare();
             const expressApp = express();
-            expressApp.use(morgan("short"));
+            if (this.ctx.website.logRequests) {
+                expressApp.use(morgan("short"));
+            }
             let store = undefined;
             if (this.ctx.database) {
                 const StoreConstructor = mysqlSession(expressSession);

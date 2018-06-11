@@ -5,6 +5,7 @@ const path = require("path");
 const fs = require("fs");
 exports.defaultMappers = {
     mailgun: {
+        id: 'default.mailgun',
         envKeys: ["MAILGUN_FROM", "MAILGUN_DOMAIN", "MAILGUN_API_KEY"],
         optionalKeys: [],
         envContext() {
@@ -18,6 +19,7 @@ exports.defaultMappers = {
         },
     },
     database: {
+        id: 'default.database',
         envKeys: ["DB_NAME", "DB_USER", "DB_PASS"],
         optionalKeys: [],
         envContext() {
@@ -30,6 +32,21 @@ exports.defaultMappers = {
             };
         },
     },
+    website: {
+        id: 'default.website',
+        envKeys: ["WEBSITE_ROOT", "WEBSITE_PORT", "WEBSITE_SESSION_SECRET"],
+        optionalKeys: ["WEBSITE_LOG_REQUESTS"],
+        envContext() {
+            return {
+                website: {
+                    root: process.env.WEBSITE_ROOT,
+                    port: Number(process.env.WEBSITE_PORT),
+                    sessionSecret: process.env.WEBSITE_SESSION_SECRET,
+                    logRequests: Boolean(process.env.WEBSITE_LOG_REQUESTS),
+                }
+            };
+        }
+    }
 };
 function default_1(i) {
     const pluginKeys = (i.mappers || []).reduce((out, item) => {
@@ -38,10 +55,7 @@ function default_1(i) {
     const pluginOptional = (i.mappers || []).reduce((out, item) => {
         return [...out, ...item.optionalKeys];
     }, []);
-    const required = [
-        ...["WEBSITE_ROOT", "WEBSITE_PORT", "WEBSITE_SESSION_SECRET"],
-        ...pluginKeys,
-    ].filter(k => pluginOptional.indexOf(k) === -1);
+    const required = pluginKeys.filter(k => pluginOptional.indexOf(k) === -1);
     const envfilePath = path.resolve(i.projectRoot, "envfile.env");
     try {
         fs.statSync(envfilePath);
@@ -59,20 +73,10 @@ function default_1(i) {
         if (!process.env[key])
             throw Error(`Required env key ${key} not defined.`);
     }
-    const defaultContext = {
-        projectRoot: i.projectRoot,
-        website: {
-            root: process.env.WEBSITE_ROOT,
-            port: Number(process.env.WEBSITE_PORT),
-            sessionSecret: process.env.WEBSITE_SESSION_SECRET,
-        },
-        database: undefined,
-        mailgun: undefined,
-    };
     const pluginContext = (i.mappers || []).reduce((out, item) => {
         return Object.assign({}, out, item.envContext());
     }, {});
-    return Object.assign({}, defaultContext, pluginContext);
+    return Object.assign({ projectRoot: i.projectRoot, loadedContexts: new Set((i.mappers || []).map(m => m.id)) }, pluginContext);
 }
 exports.default = default_1;
 //# sourceMappingURL=context.js.map

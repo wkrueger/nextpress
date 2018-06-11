@@ -1,10 +1,12 @@
 export declare type ContextMapper = {
+    id: string;
     envKeys: string[];
     optionalKeys: string[];
     envContext: () => any;
 };
 export declare const defaultMappers: {
     mailgun: {
+        id: string;
         envKeys: string[];
         optionalKeys: string[];
         envContext(): {
@@ -16,6 +18,7 @@ export declare const defaultMappers: {
         };
     };
     database: {
+        id: string;
         envKeys: string[];
         optionalKeys: string[];
         envContext(): {
@@ -23,6 +26,19 @@ export declare const defaultMappers: {
                 name: string;
                 user: string;
                 password: string;
+            };
+        };
+    };
+    website: {
+        id: string;
+        envKeys: string[];
+        optionalKeys: string[];
+        envContext(): {
+            website: {
+                root: string;
+                port: number;
+                sessionSecret: string;
+                logRequests: boolean;
             };
         };
     };
@@ -49,7 +65,9 @@ declare global  {
                 root: string;
                 port: number;
                 sessionSecret: string;
+                logRequests: boolean;
             };
+            loadedContexts: Set<string>;
         }
         interface CustomContext {
         }

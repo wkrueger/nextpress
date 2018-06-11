@@ -3,6 +3,7 @@ import path = require("path")
 import fs = require("fs")
 
 export type ContextMapper = {
+  id: string
   envKeys: string[]
   optionalKeys: string[]
   envContext: () => any
@@ -10,6 +11,7 @@ export type ContextMapper = {
 
 export const defaultMappers = {
   mailgun: {
+    id: 'default.mailgun',
     envKeys: ["MAILGUN_FROM", "MAILGUN_DOMAIN", "MAILGUN_API_KEY"],
     optionalKeys: [] as string[],
     envContext() {
@@ -23,6 +25,7 @@ export const defaultMappers = {
     },
   },
   database: {
+    id: 'default.database',
     envKeys: ["DB_NAME", "DB_USER", "DB_PASS"],
     optionalKeys: [] as string[],
     envContext() {
@@ -35,6 +38,21 @@ export const defaultMappers = {
       }
     },
   },
+  website: {
+    id: 'default.website',
+    envKeys: ["WEBSITE_ROOT", "WEBSITE_PORT", "WEBSITE_SESSION_SECRET"],
+    optionalKeys: ["WEBSITE_LOG_REQUESTS"],
+    envContext() {
+      return {
+        website : {
+          root: process.env.WEBSITE_ROOT!,
+          port: Number(process.env.WEBSITE_PORT!),
+          sessionSecret: process.env.WEBSITE_SESSION_SECRET!,
+          logRequests: Boolean(process.env.WEBSITE_LOG_REQUESTS),          
+        }
+      }
+    }
+  }
 }
 
 export default function(i: { projectRoot: string; mappers: ContextMapper[] }) {
@@ -50,10 +68,7 @@ export default function(i: { projectRoot: string; mappers: ContextMapper[] }) {
     },
     [] as string[],
   )
-  const required = [
-    ...["WEBSITE_ROOT", "WEBSITE_PORT", "WEBSITE_SESSION_SECRET"],
-    ...pluginKeys,
-  ].filter(k => pluginOptional.indexOf(k) === -1)
+  const required = pluginKeys.filter(k => pluginOptional.indexOf(k) === -1)
   const envfilePath = path.resolve(i.projectRoot, "envfile.env")
   try {
     fs.statSync(envfilePath)
@@ -69,16 +84,6 @@ export default function(i: { projectRoot: string; mappers: ContextMapper[] }) {
     const key = required[x]
     if (!process.env[key]) throw Error(`Required env key ${key} not defined.`)
   }
-  const defaultContext: Nextpress.DefaultContext = {
-    projectRoot: i.projectRoot,
-    website: {
-      root: process.env.WEBSITE_ROOT!,
-      port: Number(process.env.WEBSITE_PORT!),
-      sessionSecret: process.env.WEBSITE_SESSION_SECRET!,
-    },
-    database: undefined as any,
-    mailgun: undefined as any,
-  }
   const pluginContext = (i.mappers || []).reduce(
     (out, item) => {
       return {
@@ -89,7 +94,8 @@ export default function(i: { projectRoot: string; mappers: ContextMapper[] }) {
     {} as any,
   )
   return {
-    ...defaultContext,
+    projectRoot: i.projectRoot,
+    loadedContexts: new Set<string>((i.mappers || []).map( m => m.id )),
     ...pluginContext,
   } as Nextpress.Context
 }
@@ -112,7 +118,9 @@ declare global {
         root: string
         port: number
         sessionSecret: string
+        logRequests: boolean
       }
+      loadedContexts: Set<string>
     }
     interface CustomContext {}
     interface Context extends DefaultContext, CustomContext {}
