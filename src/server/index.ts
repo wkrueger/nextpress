@@ -147,7 +147,10 @@ class Server {
       withMiddleware,
       /** for use on jsonRouteDict */
       withValidation,
+      /* yup lib reference */
       yup,
+      /* express lib reference */
+      express,
     }
   }
 

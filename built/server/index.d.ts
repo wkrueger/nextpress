@@ -44,6 +44,7 @@ declare class Server {
             query?: yup.ObjectSchema<any> | undefined;
         }>(what: What, item: RouteDictItem<{ [k in keyof What]: What[k] extends yup.ObjectSchema<infer R> ? R : never; }>) => RouteDictItem<{}>;
         yup: typeof yup;
+        express: typeof express;
     };
     jsonErrorHandler: express.ErrorRequestHandler;
 }
