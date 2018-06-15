@@ -47,7 +47,7 @@ export default function (i: {
     projectRoot: string;
     mappers: ContextMapper[];
 }): Nextpress.Context;
-declare global  {
+declare global {
     namespace Nextpress {
         interface DefaultContext {
             projectRoot: string;

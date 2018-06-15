@@ -88,7 +88,7 @@ class Server {
       },
     }
 
-    return withCSS(withTypescript(opts))
+    return withTypescript(withCSS(opts))
   }
 
   /**

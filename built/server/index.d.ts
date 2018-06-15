@@ -1,5 +1,3 @@
-/// <reference types="express" />
-/// <reference types="next" />
 import nextjs = require("next");
 import express = require("express");
 import yup = require("yup");
@@ -28,21 +26,31 @@ declare class Server {
      * helpers available on the routeSetup method
      */
     _routeSetupHelper(): {
+        /**
+         * creates a router suited for next.js html/react routes;
+         * we add the common middleware, you set up the routes on the callback;
+         * next.js middleware is always added in the end of the stack.
+         */
         htmlRoutes(fn?: (h: express.Router) => Promise<void>): Promise<express.Router>;
+        /**
+         * creates a router suited for JSON API routes;
+         * we add the common middleware, you set up the routes on the callback;
+         */
         jsonRoutes(fn: (h: express.Router) => Promise<void>): Promise<express.Router>;
+        /** wraps a middleware in try/catch/next */
         tryMw: (fn: (req: express.Request, res: express.Response) => void | Promise<void>) => (req: express.Request, res: express.Response, next: express.NextFunction) => Promise<void>;
+        /** a reference to the next.js app, which has the renderer */
         nextApp: nextjs.Server;
+        /** next.js default middleware */
         nextMw: (req: express.Request, res: express.Response, next: express.NextFunction) => Promise<void>;
-        jsonRouteDict: <Dict extends {
-            [k: string]: RouteDictItem<{}>;
-        }>(router: express.Router, routeDict: Dict) => void;
-        withMethod: (method: string, item: RouteDictItem<{}>) => RouteDictItem<{}>;
-        withMiddleware: (mw: express.RequestHandler[], item: RouteDictItem<{}>) => RouteDictItem<{}>;
-        withValidation: <What extends {
-            body?: yup.ObjectSchema<any> | undefined;
-            params?: yup.ObjectSchema<any> | undefined;
-            query?: yup.ObjectSchema<any> | undefined;
-        }>(what: What, item: RouteDictItem<{ [k in keyof What]: What[k] extends yup.ObjectSchema<infer R> ? R : never; }>) => RouteDictItem<{}>;
+        /** declare json routes in a simplified way */
+        jsonRouteDict: typeof jsonRouteDict;
+        /** for use on jsonRouteDict */
+        withMethod: typeof withMethod;
+        /** for use on jsonRouteDict */
+        withMiddleware: typeof withMiddleware;
+        /** for use on jsonRouteDict */
+        withValidation: typeof withValidation;
         yup: typeof yup;
         express: typeof express;
     };
@@ -56,4 +64,27 @@ export interface RouteDictItem<Replace = {}> {
     method?: string;
     middleware?: express.RequestHandler[];
 }
+declare type RouteDict = {
+    [k: string]: RouteDictItem;
+};
+declare function jsonRouteDict<Dict extends RouteDict>(router: express.Router, routeDict: Dict): void;
+/**
+ * (for a given RouteItem) Sets another http method than the default
+ */
+declare function withMethod(method: string, item: RouteDictItem): RouteDictItem;
+/**
+ * (for a given route item) Adds middleware to be run before
+ */
+declare function withMiddleware(mw: express.RequestHandler[], item: RouteDictItem): RouteDictItem;
+declare type UnwrapSchema<T> = T extends yup.ObjectSchema<infer R> ? R : never;
+declare type SchemaDict = {
+    [k in "query" | "params" | "body"]?: yup.ObjectSchema<any>;
+};
+declare type UnwrapSchemaDict<T extends SchemaDict> = {
+    [k in keyof T]: UnwrapSchema<T[k]>;
+};
+/**
+ * (for a given route item) Validates query and/or params with the provided rules.
+ */
+declare function withValidation<What extends SchemaDict>(what: What, item: RouteDictItem<UnwrapSchemaDict<What>>): RouteDictItem;
 export { Server, nextjs };

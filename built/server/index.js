@@ -113,7 +113,7 @@ class Server {
                 return config;
             },
         };
-        return withCSS(withTypescript(opts));
+        return withTypescript(withCSS(opts));
     }
     /**
      * helpers available on the routeSetup method
