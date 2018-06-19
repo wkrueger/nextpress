@@ -1,6 +1,10 @@
 import dotenv = require("dotenv")
 import path = require("path")
 import fs = require("fs")
+import mailgunMapper from "./contexts/mailgun"
+import databaseMapper from "./contexts/database"
+import websiteMapper from "./contexts/website"
+import { QueryInterface } from "knex"
 
 export type ContextMapper = {
   id: string
@@ -10,50 +14,19 @@ export type ContextMapper = {
 }
 
 export const defaultMappers = {
-  mailgun: {
-    id: 'default.mailgun',
-    envKeys: ["MAILGUN_FROM", "MAILGUN_DOMAIN", "MAILGUN_API_KEY"],
-    optionalKeys: [] as string[],
-    envContext() {
-      return {
-        mailgun: {
-          from: process.env.MAILGUN_FROM,
-          domain: process.env.MAILGUN_DOMAIN,
-          apiKey: process.env.MAILGUN_API_KEY,
-        },
-      }
-    },
-  },
-  database: {
-    id: 'default.database',
-    envKeys: ["DB_NAME", "DB_USER", "DB_PASS"],
-    optionalKeys: [] as string[],
-    envContext() {
-      return {
-        database: {
-          name: process.env.DB_NAME!,
-          user: process.env.DB_USER!,
-          password: process.env.DB_PASS!,
-        },
-      }
-    },
-  },
-  website: {
-    id: 'default.website',
-    envKeys: ["WEBSITE_ROOT", "WEBSITE_PORT", "WEBSITE_SESSION_SECRET"],
-    optionalKeys: ["WEBSITE_LOG_REQUESTS"],
-    envContext() {
-      return {
-        website : {
-          root: process.env.WEBSITE_ROOT!,
-          port: Number(process.env.WEBSITE_PORT!),
-          sessionSecret: process.env.WEBSITE_SESSION_SECRET!,
-          logRequests: Boolean(process.env.WEBSITE_LOG_REQUESTS),          
-        }
-      }
-    }
-  }
+  mailgun: mailgunMapper,
+  database: databaseMapper,
+  website: websiteMapper,
 }
+
+type GetMapperContext<T> = T extends { envContext: () => infer R } ? R : never
+type Values<T> = T[keyof T]
+type Intersecion = GetMapperContext<Values<typeof defaultMappers>>
+type GetKeys<U> = U extends Record<infer K, any> ? K : never
+type UnionToIntersection<U extends object> = {
+  [K in GetKeys<U>]: U extends Record<K, infer T> ? T : never
+}
+type GenDefaultContext = UnionToIntersection<Intersecion>
 
 export default function(i: { projectRoot: string; mappers: ContextMapper[] }) {
   const pluginKeys = (i.mappers || []).reduce(
@@ -95,31 +68,15 @@ export default function(i: { projectRoot: string; mappers: ContextMapper[] }) {
   )
   return {
     projectRoot: i.projectRoot,
-    loadedContexts: new Set<string>((i.mappers || []).map( m => m.id )),
+    loadedContexts: new Set<string>((i.mappers || []).map(m => m.id)),
     ...pluginContext,
   } as Nextpress.Context
 }
 
 declare global {
   namespace Nextpress {
-    interface DefaultContext {
+    interface DefaultContext extends GenDefaultContext {
       projectRoot: string
-      database: {
-        name: string
-        user: string
-        password: string
-      }
-      mailgun: {
-        from: string
-        domain: string
-        apiKey: string
-      }
-      website: {
-        root: string
-        port: number
-        sessionSecret: string
-        logRequests: boolean
-      }
       loadedContexts: Set<string>
     }
     interface CustomContext {}

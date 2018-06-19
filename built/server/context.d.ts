@@ -1,3 +1,4 @@
+import { QueryInterface } from "knex";
 export declare type ContextMapper = {
     id: string;
     envKeys: string[];
@@ -11,9 +12,14 @@ export declare const defaultMappers: {
         optionalKeys: string[];
         envContext(): {
             mailgun: {
-                from: string | undefined;
-                domain: string | undefined;
-                apiKey: string | undefined;
+                from: string;
+                domain: string;
+                apiKey: string;
+                sendMail(inp: {
+                    email: string;
+                    subject: string;
+                    html: string;
+                }): Promise<any>;
             };
         };
     };
@@ -23,9 +29,13 @@ export declare const defaultMappers: {
         optionalKeys: string[];
         envContext(): {
             database: {
+                client: string;
+                host: string;
                 name: string;
                 user: string;
                 password: string;
+                _db: QueryInterface;
+                db(): QueryInterface;
             };
         };
     };
@@ -43,30 +53,24 @@ export declare const defaultMappers: {
         };
     };
 };
+type GetMapperContext<T> = T extends {
+    envContext: () => infer R;
+} ? R : never;
+type Values<T> = T[keyof T];
+type Intersecion = GetMapperContext<Values<typeof defaultMappers>>;
+type GetKeys<U> = U extends Record<infer K, any> ? K : never;
+type UnionToIntersection<U extends object> = {
+    [K in GetKeys<U>]: U extends Record<K, infer T> ? T : never;
+};
+type GenDefaultContext = UnionToIntersection<Intersecion>;
 export default function (i: {
     projectRoot: string;
     mappers: ContextMapper[];
 }): Nextpress.Context;
 declare global {
     namespace Nextpress {
-        interface DefaultContext {
+        interface DefaultContext extends GenDefaultContext {
             projectRoot: string;
-            database: {
-                name: string;
-                user: string;
-                password: string;
-            };
-            mailgun: {
-                from: string;
-                domain: string;
-                apiKey: string;
-            };
-            website: {
-                root: string;
-                port: number;
-                sessionSecret: string;
-                logRequests: boolean;
-            };
             loadedContexts: Set<string>;
         }
         interface CustomContext {
@@ -75,3 +79,4 @@ declare global {
         }
     }
 }
+export {};

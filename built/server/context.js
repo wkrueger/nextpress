@@ -3,50 +3,13 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const dotenv = require("dotenv");
 const path = require("path");
 const fs = require("fs");
+const mailgun_1 = require("./contexts/mailgun");
+const database_1 = require("./contexts/database");
+const website_1 = require("./contexts/website");
 exports.defaultMappers = {
-    mailgun: {
-        id: 'default.mailgun',
-        envKeys: ["MAILGUN_FROM", "MAILGUN_DOMAIN", "MAILGUN_API_KEY"],
-        optionalKeys: [],
-        envContext() {
-            return {
-                mailgun: {
-                    from: process.env.MAILGUN_FROM,
-                    domain: process.env.MAILGUN_DOMAIN,
-                    apiKey: process.env.MAILGUN_API_KEY,
-                },
-            };
-        },
-    },
-    database: {
-        id: 'default.database',
-        envKeys: ["DB_NAME", "DB_USER", "DB_PASS"],
-        optionalKeys: [],
-        envContext() {
-            return {
-                database: {
-                    name: process.env.DB_NAME,
-                    user: process.env.DB_USER,
-                    password: process.env.DB_PASS,
-                },
-            };
-        },
-    },
-    website: {
-        id: 'default.website',
-        envKeys: ["WEBSITE_ROOT", "WEBSITE_PORT", "WEBSITE_SESSION_SECRET"],
-        optionalKeys: ["WEBSITE_LOG_REQUESTS"],
-        envContext() {
-            return {
-                website: {
-                    root: process.env.WEBSITE_ROOT,
-                    port: Number(process.env.WEBSITE_PORT),
-                    sessionSecret: process.env.WEBSITE_SESSION_SECRET,
-                    logRequests: Boolean(process.env.WEBSITE_LOG_REQUESTS),
-                }
-            };
-        }
-    }
+    mailgun: mailgun_1.default,
+    database: database_1.default,
+    website: website_1.default,
 };
 function default_1(i) {
     const pluginKeys = (i.mappers || []).reduce((out, item) => {
