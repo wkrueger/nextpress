@@ -3,6 +3,8 @@ import knexModule = require("knex")
 import { v4 as uuid } from "uuid"
 import bcrypt = require("bcrypt")
 import ono = require("ono")
+import { RequestHandler, RouteSetupHelper } from ".."
+import { Router } from "express"
 
 const createUserSchema = Yup.object({
   email: Yup.string()
@@ -50,6 +52,18 @@ type SchemaType<T> = T extends Yup.ObjectSchema<infer Y> ? Y : never
 
 export class UserAuth {
   constructor(public ctx: Nextpress.Context, public _knex: knexModule) {}
+
+  async init() {
+    if (!(await this._knex.schema.hasTable("user"))) {
+      await this._knex.schema.createTable("user", table => {
+        table.increments()
+        table.string("email", 30).unique()
+        table.string("auth", 80)
+        table.string("validationHash", 80)
+        table.string("resetPwdHash", 80)
+      })
+    }
+  }
 
   userTable() {
     return this._knex("user")
@@ -144,18 +158,118 @@ export class UserAuth {
       .where({ resetPwdHash: inp.requestId })
   }
 
+  gatewayMw: RequestHandler = (req, res, next) => {
+    try {
+      if (!req.session) throw ono({ statusCode: 401 }, "Unauthorized")
+      if (!req.session.user) throw ono({ statusCode: 401 }, "Unauthorized")
+      res.setHeader("X-User-Id", req.session.user.id)
+      res.setHeader("X-User-Email", req.session.user.email)
+      next()
+    } catch (err) {
+      next(err)
+    }
+  }
+
+  async userRoutes(Setup: RouteSetupHelper) {
+    const User = this
+    const { yup, withValidation, express } = Setup
+    const api = await Setup.jsonRoutes(async router => {
+      Setup.jsonRouteDict(router, {
+        "/createuser": withValidation(
+          {
+            body: yup.object({
+              newUserEmail: yup.string().email(),
+              newUserPwd: yup.string().min(8),
+            }),
+          },
+          async req => {
+            await User.create({
+              email: req.body.newUserEmail,
+              password: req.body.newUserPwd,
+            })
+            return { status: "OK" }
+          },
+        ),
+
+        "/login": withValidation(
+          {
+            body: yup.object({
+              existingUserEmail: yup.string().email(),
+              existingUserPwd: yup.string().min(8),
+            }),
+          },
+          async req => {
+            const user = await User.find({
+              email: req.body.existingUserEmail,
+              password: req.body.existingUserPwd,
+            })
+            if (!user) {
+              throw ono({ statusCode: 401 }, "Could not authenticate with what you entered.")
+            }
+            req.session!.user = { email: user.email, id: user.id }
+            return { status: "OK" }
+          },
+        ),
+
+        "/request-password-reset": withValidation(
+          { body: yup.object({ email: yup.string().email() }) },
+          async req => {
+            await User.createResetPwdRequest({ email: req.body.email })
+            return { status: "OK" }
+          },
+        ),
+
+        "/perform-password-reset": withValidation(
+          {
+            body: yup.object({
+              pwd1: yup.string().min(8),
+              pwd2: yup.string().min(8),
+              requestId: yup.string().required(),
+            }),
+          },
+          async req => {
+            await User.performResetPwd(req.body)
+            return { status: "OK" }
+          },
+        ),
+
+        "/logout": Setup.withMiddleware([User.gatewayMw], async req => {
+          req.session!.user = undefined
+          return { status: "OK" }
+        }),
+      })
+    })
+    return { api }
+  }
+
   _validationMailHTML(i: { address: string; validationLink: string }) {
     return `<p>Hi! ${i.address}.</p>
       <p>Follow this link to validate your account: 
       <a href="${i.validationLink}">${i.validationLink}</a>.</p>`
   }
 
+  /**
+   * Overrideable.
+   * The route to be used for user creation validation email.
+   */
+  _validateRoute() {
+    return "/validate"
+  }
+
+  /**
+   * Overrideable.
+   * The route to be used for user reset password email.
+   */
+  _forgotPasswordRoute() {
+    return "/forgot-password"
+  }
+
   _createValidationLink(hash: string) {
-    return `${this.ctx.website.root}/validate?seq=${encodeURIComponent(hash)}`
+    return `${this.ctx.website.root}${this._validateRoute()}?seq=${encodeURIComponent(hash)}`
   }
 
   _createResetPasswordLink(seq: string) {
-    return `${this.ctx.website.root}/forgot-password?seq=${encodeURIComponent(seq)}`
+    return `${this.ctx.website.root}${this._forgotPasswordRoute()}?seq=${encodeURIComponent(seq)}`
   }
 
   _resetPwdMailHTML(i: { address: string; validationLink: string }) {
