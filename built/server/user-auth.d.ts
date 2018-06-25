@@ -1,5 +1,7 @@
 import Yup = require("yup");
 import knexModule = require("knex");
+import { RequestHandler, RouteSetupHelper } from "..";
+import { Router, Request, Response } from "express";
 declare const createUserSchema: Yup.ObjectSchema<{
     email: string;
     password: string;
@@ -26,6 +28,7 @@ export declare class UserAuth {
     ctx: Nextpress.Context;
     _knex: knexModule;
     constructor(ctx: Nextpress.Context, _knex: knexModule);
+    init(): Promise<void>;
     userTable(): knexModule.QueryBuilder;
     create(inp: SchemaType<typeof createUserSchema>): Promise<void>;
     validate(hash: string): Promise<User>;
@@ -33,10 +36,27 @@ export declare class UserAuth {
     createResetPwdRequest(inp: SchemaType<typeof emailSchema>): Promise<void>;
     findResetPwdRequest(inp: SchemaType<typeof requestIdSchema>): Promise<boolean>;
     performResetPwd(inp: SchemaType<typeof pwdRequestSchema>): Promise<void>;
+    checkSession: (req: Request, res: Response) => void;
+    throwOnUnauthMw: RequestHandler;
+    userRoutes(Setup: RouteSetupHelper): Promise<{
+        json: Router;
+        html: Router;
+    }>;
+    _renderSimpleMessage(Setup: RouteSetupHelper, req: any, res: any, title: string, message: string): Promise<void>;
     _validationMailHTML(i: {
         address: string;
         validationLink: string;
     }): string;
+    /**
+     * Overrideable.
+     * The route to be used for user creation validation email.
+     */
+    _validateRoute(): string;
+    /**
+     * Overrideable.
+     * The route to be used for user reset password email.
+     */
+    _forgotPasswordRoute(): string;
     _createValidationLink(hash: string): string;
     _createResetPasswordLink(seq: string): string;
     _resetPwdMailHTML(i: {

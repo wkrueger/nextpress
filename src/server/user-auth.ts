@@ -4,7 +4,7 @@ import { v4 as uuid } from "uuid"
 import bcrypt = require("bcrypt")
 import ono = require("ono")
 import { RequestHandler, RouteSetupHelper } from ".."
-import { Router } from "express"
+import { Router, Request, Response } from "express"
 
 const createUserSchema = Yup.object({
   email: Yup.string()
@@ -158,12 +158,16 @@ export class UserAuth {
       .where({ resetPwdHash: inp.requestId })
   }
 
-  gatewayMw: RequestHandler = (req, res, next) => {
+  checkSession = (req: Request, res: Response) => {
+    if (!req.session) throw ono({ statusCode: 401 }, "Unauthorized")
+    if (!req.session.user) throw ono({ statusCode: 401 }, "Unauthorized")
+    res.setHeader("X-User-Id", req.session.user.id)
+    res.setHeader("X-User-Email", req.session.user.email)
+  }
+
+  throwOnUnauthMw: RequestHandler = (req, res, next) => {
     try {
-      if (!req.session) throw ono({ statusCode: 401 }, "Unauthorized")
-      if (!req.session.user) throw ono({ statusCode: 401 }, "Unauthorized")
-      res.setHeader("X-User-Id", req.session.user.id)
-      res.setHeader("X-User-Email", req.session.user.email)
+      this.checkSession(req, res)
       next()
     } catch (err) {
       next(err)
@@ -172,8 +176,8 @@ export class UserAuth {
 
   async userRoutes(Setup: RouteSetupHelper) {
     const User = this
-    const { yup, withValidation, express } = Setup
-    const api = await Setup.jsonRoutes(async router => {
+    const { yup, withValidation } = Setup
+    const json = await Setup.jsonRoutes(async router => {
       Setup.jsonRouteDict(router, {
         "/createuser": withValidation(
           {
@@ -233,13 +237,60 @@ export class UserAuth {
           },
         ),
 
-        "/logout": Setup.withMiddleware([User.gatewayMw], async req => {
-          req.session!.user = undefined
-          return { status: "OK" }
-        }),
+        "/logout": Setup.withMethod(
+          "all",
+          Setup.withMiddleware([User.throwOnUnauthMw], async req => {
+            req.session!.user = undefined
+            return { status: "OK" }
+          }),
+        ),
       })
     })
-    return { api }
+
+    const html = await Setup.htmlRoutes(async router => {
+      router.get(
+        this._forgotPasswordRoute(),
+        Setup.tryMw((req, res) => {
+          const found = User.findResetPwdRequest({ requestId: req.query.seq })
+          if (!found) {
+            return this._renderSimpleMessage(Setup, req, res, "Error", "Invalid request.")
+          } else {
+            return this._renderSimpleMessage(
+              Setup,
+              req,
+              res,
+              "Success",
+              "Your password has been reset.",
+            )
+          }
+        }),
+      )
+
+      router.get(
+        this._validateRoute(),
+        Setup.tryMw(async (req, res) => {
+          const hash = req.query.seq
+          let user = await User.validate(hash)
+          req.session!.user = { id: user.id, email: user.email }
+          return this._renderSimpleMessage(Setup, req, res, "Success", "User validated.")
+        }),
+      )
+    })
+
+    return { json, html }
+  }
+
+  _renderSimpleMessage(
+    Setup: RouteSetupHelper,
+    req: any,
+    res: any,
+    title: string,
+    message: string,
+  ) {
+    return Setup.nextApp.render(req, res, "/auth/message", {
+      title: message,
+      content: message,
+    })
   }
 
   _validationMailHTML(i: { address: string; validationLink: string }) {
@@ -253,7 +304,7 @@ export class UserAuth {
    * The route to be used for user creation validation email.
    */
   _validateRoute() {
-    return "/validate"
+    return "/auth/validate"
   }
 
   /**
@@ -261,7 +312,7 @@ export class UserAuth {
    * The route to be used for user reset password email.
    */
   _forgotPasswordRoute() {
-    return "/forgot-password"
+    return "/auth/forgot-password"
   }
 
   _createValidationLink(hash: string) {

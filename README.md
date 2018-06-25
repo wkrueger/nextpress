@@ -9,6 +9,7 @@ Currently bundling:
 - a default configs setup with `dotenv`
 - some scaffolding (I'd like less but huh)
 - front-end reacty common things (react, react-dom, redux, redutser, formik...)
+  - moved to `nextpress-client` package
 - all with typescript in mind
 
 Trying not to worry much about config options, it is of intention to have one big monolythic package.
@@ -16,7 +17,7 @@ Trying not to worry much about config options, it is of intention to have one bi
 ## scaffolding
 
 ```
-npm i <some-nextpress-source> (currently not on npm)
+npm i @proerd/nextpress
 ```
 
 Create a `build.js` file with:
@@ -38,7 +39,7 @@ Also currently available:
 
 There will be two `tsconfig.json`s around. The one on the root is invoked by next.js when you start the server. The one inside the `server` folder needs to be manually built.
 
-Server (compiled) will be available at `./nextpress/index.js`. The first time you run it it may complain something and create an `envfile.env` which you should edit.
+Server (compiled) will be available at `./nextpress/index.js` and is expected to be run with .nextpress cwd. The first time you run it it may complain something and create an `envfile.env` which you should edit.
 
 ```
 WEBSITE_ROOT="http://localhost:8080"
@@ -64,18 +65,26 @@ Folder structure goes like this:
 import { ContextFactory } from "nextpress"
 
 const context = ContextFactory({
+  mappers: [
+    defaultMappers.website,
+    defaultMappers.mailgun,
+    defaultMappers.database,
+    {
+      id: "auction_scan",
+      envKeys: ["BNET_API_KEY", "RUN_SERVICE"],
+      optionalKeys: ["RUN_SERVICE"],
+      envContext: () => ({
+        apiKey: process.env.BNET_API_KEY!,
+        runService: Boolean(process.env.RUN_SERVICE),
+      }),
+    },
+  ],
   projectRoot: path.resolve(__dirname, ".."),
+})
 })
 ```
 
 Reads from the envfile and populates a settings object which is meant to be used throughout the project.
-
-```typescript
-ContextFactory(i: {
-    projectRoot: string;
-    mappers: ContextMapper[];
-}): Nextpress.Context
-```
 
 A "context mapper" describes the mapping from the `env` keys to the resulting object. A couple of default `defaultMappers` are provided.
 
@@ -90,8 +99,6 @@ declare global {
   }
 }
 ```
-
-> Fixme: include `knex` into the database thingy
 
 ## Route setup
 
@@ -178,6 +185,45 @@ server.routeSetup = async (app, setup) => {
 }
 server.run()
 ```
+
+## Auth boilerplate
+
+```ts
+import UserAuth from "nextpress/built/user-auth"
+const userAuth = new UserAuth(ctx, knex)
+await userAuth.init()
+```
+
+Contains common session auth workflow things.
+
+This is shaped as an OOPish interceptor pattern. Override methods to customize things.
+
+- **init()** This creates an `user` table in the database;
+
+- Auth workflow
+
+  1.  `create()` creates an unvalidated user and a validation token
+  2.  `validate()` validates an user with the provided hash
+  3.  `find()` looks up an user given email and password. Fails on unvalidated user
+  4.  `createResetPwdRequest()`
+  5.  `findResetPwdRequest()` finds but wont do nothing
+  6.  `performResetPwd()`
+
+- JSON routes
+  - `gatewayMw` (to be used on express routes)
+  - `userRoutes(opts).json` generates an express router with a set of routes from the above workflow methods (all them POST + JSON)
+    - `/createUser` `{ newUserEmail, newUserPwd }`
+    - `/login` `{ existingUserEmail, existingUserPwd }`
+    - `/request-password-reset` `{ email }`
+    - `/perform-password-reset` `{ pwd1, pwd2, requestId }`
+    - `/logout`
+  - `userRoutes(opts).html` generates preset next.js routes for the workflow (add to root app)
+    - `/auth/password-reset` password reset form the email will link to. Create the
+      layout on `./pages/auth/password-reset.tsx`. May be overriden.
+    - `/auth/validate?seq=<hash>` validation route the email will link to.
+- GET routes
+- `/auth/validate?seq=`
+- `/auth/forgotPassword?seq=`
 
 TODO
 

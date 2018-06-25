@@ -47,6 +47,36 @@ class UserAuth {
     constructor(ctx, _knex) {
         this.ctx = ctx;
         this._knex = _knex;
+        this.checkSession = (req, res) => {
+            if (!req.session)
+                throw ono({ statusCode: 401 }, "Unauthorized");
+            if (!req.session.user)
+                throw ono({ statusCode: 401 }, "Unauthorized");
+            res.setHeader("X-User-Id", req.session.user.id);
+            res.setHeader("X-User-Email", req.session.user.email);
+        };
+        this.throwOnUnauthMw = (req, res, next) => {
+            try {
+                this.checkSession(req, res);
+                next();
+            }
+            catch (err) {
+                next(err);
+            }
+        };
+    }
+    init() {
+        return __awaiter(this, void 0, void 0, function* () {
+            if (!(yield this._knex.schema.hasTable("user"))) {
+                yield this._knex.schema.createTable("user", table => {
+                    table.increments();
+                    table.string("email", 30).unique();
+                    table.string("auth", 80);
+                    table.string("validationHash", 80);
+                    table.string("resetPwdHash", 80);
+                });
+            }
+        });
     }
     userTable() {
         return this._knex("user");
@@ -152,16 +182,110 @@ class UserAuth {
                 .where({ resetPwdHash: inp.requestId });
         });
     }
+    userRoutes(Setup) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const User = this;
+            const { yup, withValidation } = Setup;
+            const json = yield Setup.jsonRoutes((router) => __awaiter(this, void 0, void 0, function* () {
+                Setup.jsonRouteDict(router, {
+                    "/createuser": withValidation({
+                        body: yup.object({
+                            newUserEmail: yup.string().email(),
+                            newUserPwd: yup.string().min(8),
+                        }),
+                    }, (req) => __awaiter(this, void 0, void 0, function* () {
+                        yield User.create({
+                            email: req.body.newUserEmail,
+                            password: req.body.newUserPwd,
+                        });
+                        return { status: "OK" };
+                    })),
+                    "/login": withValidation({
+                        body: yup.object({
+                            existingUserEmail: yup.string().email(),
+                            existingUserPwd: yup.string().min(8),
+                        }),
+                    }, (req) => __awaiter(this, void 0, void 0, function* () {
+                        const user = yield User.find({
+                            email: req.body.existingUserEmail,
+                            password: req.body.existingUserPwd,
+                        });
+                        if (!user) {
+                            throw ono({ statusCode: 401 }, "Could not authenticate with what you entered.");
+                        }
+                        req.session.user = { email: user.email, id: user.id };
+                        return { status: "OK" };
+                    })),
+                    "/request-password-reset": withValidation({ body: yup.object({ email: yup.string().email() }) }, (req) => __awaiter(this, void 0, void 0, function* () {
+                        yield User.createResetPwdRequest({ email: req.body.email });
+                        return { status: "OK" };
+                    })),
+                    "/perform-password-reset": withValidation({
+                        body: yup.object({
+                            pwd1: yup.string().min(8),
+                            pwd2: yup.string().min(8),
+                            requestId: yup.string().required(),
+                        }),
+                    }, (req) => __awaiter(this, void 0, void 0, function* () {
+                        yield User.performResetPwd(req.body);
+                        return { status: "OK" };
+                    })),
+                    "/logout": Setup.withMethod("all", Setup.withMiddleware([User.throwOnUnauthMw], (req) => __awaiter(this, void 0, void 0, function* () {
+                        req.session.user = undefined;
+                        return { status: "OK" };
+                    }))),
+                });
+            }));
+            const html = yield Setup.htmlRoutes((router) => __awaiter(this, void 0, void 0, function* () {
+                router.get(this._forgotPasswordRoute(), Setup.tryMw((req, res) => {
+                    const found = User.findResetPwdRequest({ requestId: req.query.seq });
+                    if (!found) {
+                        return this._renderSimpleMessage(Setup, req, res, "Error", "Invalid request.");
+                    }
+                    else {
+                        return this._renderSimpleMessage(Setup, req, res, "Success", "Your password has been reset.");
+                    }
+                }));
+                router.get(this._validateRoute(), Setup.tryMw((req, res) => __awaiter(this, void 0, void 0, function* () {
+                    const hash = req.query.seq;
+                    let user = yield User.validate(hash);
+                    req.session.user = { id: user.id, email: user.email };
+                    return this._renderSimpleMessage(Setup, req, res, "Success", "User validated.");
+                })));
+            }));
+            return { json, html };
+        });
+    }
+    _renderSimpleMessage(Setup, req, res, title, message) {
+        return Setup.nextApp.render(req, res, "/auth/message", {
+            title: message,
+            content: message,
+        });
+    }
     _validationMailHTML(i) {
         return `<p>Hi! ${i.address}.</p>
       <p>Follow this link to validate your account: 
       <a href="${i.validationLink}">${i.validationLink}</a>.</p>`;
     }
+    /**
+     * Overrideable.
+     * The route to be used for user creation validation email.
+     */
+    _validateRoute() {
+        return "/auth/validate";
+    }
+    /**
+     * Overrideable.
+     * The route to be used for user reset password email.
+     */
+    _forgotPasswordRoute() {
+        return "/auth/forgot-password";
+    }
     _createValidationLink(hash) {
-        return `${this.ctx.website.root}/validate?seq=${encodeURIComponent(hash)}`;
+        return `${this.ctx.website.root}${this._validateRoute()}?seq=${encodeURIComponent(hash)}`;
     }
     _createResetPasswordLink(seq) {
-        return `${this.ctx.website.root}/forgot-password?seq=${encodeURIComponent(seq)}`;
+        return `${this.ctx.website.root}${this._forgotPasswordRoute()}?seq=${encodeURIComponent(seq)}`;
     }
     _resetPwdMailHTML(i) {
         return `
