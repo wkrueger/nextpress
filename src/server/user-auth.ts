@@ -249,24 +249,6 @@ export class UserAuth {
 
     const html = await Setup.htmlRoutes(async router => {
       router.get(
-        this._forgotPasswordRoute(),
-        Setup.tryMw((req, res) => {
-          const found = User.findResetPwdRequest({ requestId: req.query.seq })
-          if (!found) {
-            return this._renderSimpleMessage(Setup, req, res, "Error", "Invalid request.")
-          } else {
-            return this._renderSimpleMessage(
-              Setup,
-              req,
-              res,
-              "Success",
-              "Your password has been reset.",
-            )
-          }
-        }),
-      )
-
-      router.get(
         this._validateRoute(),
         Setup.tryMw(async (req, res) => {
           const hash = req.query.seq
@@ -311,8 +293,8 @@ export class UserAuth {
    * Overrideable.
    * The route to be used for user reset password email.
    */
-  _forgotPasswordRoute() {
-    return "/auth/forgot-password"
+  _passwordResetFormRoute() {
+    return "/auth/password-reset-form"
   }
 
   _createValidationLink(hash: string) {
@@ -320,7 +302,9 @@ export class UserAuth {
   }
 
   _createResetPasswordLink(seq: string) {
-    return `${this.ctx.website.root}${this._forgotPasswordRoute()}?seq=${encodeURIComponent(seq)}`
+    return `${
+      this.ctx.website.root
+    }${this._passwordResetFormRoute()}?requestId=${encodeURIComponent(seq)}`
   }
 
   _resetPwdMailHTML(i: { address: string; validationLink: string }) {

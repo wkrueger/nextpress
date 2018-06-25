@@ -237,15 +237,6 @@ class UserAuth {
                 });
             }));
             const html = yield Setup.htmlRoutes((router) => __awaiter(this, void 0, void 0, function* () {
-                router.get(this._forgotPasswordRoute(), Setup.tryMw((req, res) => {
-                    const found = User.findResetPwdRequest({ requestId: req.query.seq });
-                    if (!found) {
-                        return this._renderSimpleMessage(Setup, req, res, "Error", "Invalid request.");
-                    }
-                    else {
-                        return this._renderSimpleMessage(Setup, req, res, "Success", "Your password has been reset.");
-                    }
-                }));
                 router.get(this._validateRoute(), Setup.tryMw((req, res) => __awaiter(this, void 0, void 0, function* () {
                     const hash = req.query.seq;
                     let user = yield User.validate(hash);
@@ -278,14 +269,14 @@ class UserAuth {
      * Overrideable.
      * The route to be used for user reset password email.
      */
-    _forgotPasswordRoute() {
-        return "/auth/forgot-password";
+    _passwordResetFormRoute() {
+        return "/auth/password-reset-form";
     }
     _createValidationLink(hash) {
         return `${this.ctx.website.root}${this._validateRoute()}?seq=${encodeURIComponent(hash)}`;
     }
     _createResetPasswordLink(seq) {
-        return `${this.ctx.website.root}${this._forgotPasswordRoute()}?seq=${encodeURIComponent(seq)}`;
+        return `${this.ctx.website.root}${this._passwordResetFormRoute()}?requestId=${encodeURIComponent(seq)}`;
     }
     _resetPwdMailHTML(i) {
         return `

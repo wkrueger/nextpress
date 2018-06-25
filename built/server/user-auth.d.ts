@@ -56,7 +56,7 @@ export declare class UserAuth {
      * Overrideable.
      * The route to be used for user reset password email.
      */
-    _forgotPasswordRoute(): string;
+    _passwordResetFormRoute(): string;
     _createValidationLink(hash: string): string;
     _createResetPasswordLink(seq: string): string;
     _resetPwdMailHTML(i: {

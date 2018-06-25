@@ -218,12 +218,15 @@ This is shaped as an OOPish interceptor pattern. Override methods to customize t
     - `/perform-password-reset` `{ pwd1, pwd2, requestId }`
     - `/logout`
   - `userRoutes(opts).html` generates preset next.js routes for the workflow (add to root app)
-    - `/auth/password-reset` password reset form the email will link to. Create the
-      layout on `./pages/auth/password-reset.tsx`. May be overriden.
     - `/auth/validate?seq=<hash>` validation route the email will link to.
-- GET routes
-- `/auth/validate?seq=`
-- `/auth/forgotPassword?seq=`
+- GET routes: Links sent to the emails
+  - `/auth/validate?seq=`
+  - `/auth/forgotPassword?seq=`
+- Required additional setup:
+  - Create a route for displaying simple messages (default path `/auth/message.tsx`), this receives
+    the `title` and `content` props.
+  - Create a route for the password reset form (default at `/auth/password-reset-form`). This route
+    receives the `requestId` prop.
 
 TODO
 
