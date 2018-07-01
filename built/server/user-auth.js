@@ -12,6 +12,7 @@ const Yup = require("yup");
 const uuid_1 = require("uuid");
 const bcrypt = require("bcrypt");
 const ono = require("ono");
+const day = require("dayjs");
 const createUserSchema = Yup.object({
     email: Yup.string()
         .email()
@@ -44,9 +45,9 @@ const pwdRequestSchema = Yup.object({
         .required(),
 });
 class UserAuth {
-    constructor(ctx, _knex) {
+    constructor(ctx) {
         this.ctx = ctx;
-        this._knex = _knex;
+        this._knex = this.ctx.database.db();
         this.checkSession = (req, res) => {
             if (!req.session)
                 throw ono({ statusCode: 401 }, "Unauthorized");
@@ -74,21 +75,68 @@ class UserAuth {
                     table.string("auth", 80);
                     table.string("validationHash", 80);
                     table.string("resetPwdHash", 80);
+                    table.timestamp("validationExpires");
+                    table.timestamp("resetPwdExpires");
+                    table.timestamp("lastRequest");
                 });
             }
+            yield this.routineCleanup();
         });
     }
     userTable() {
         return this._knex("user");
+    }
+    userRequestCap(email, seconds) {
+        return __awaiter(this, void 0, void 0, function* () {
+            if (!email)
+                throw Error("Invalid input.");
+            let result = yield this.userTable()
+                .where({ email })
+                .select("lastRequest");
+            if (!result.length)
+                return;
+            let lastReq = result[0].lastRequest;
+            if (!lastReq ||
+                day(lastReq)
+                    .add(seconds, "second")
+                    .isAfter(day())) {
+                yield this.userTable()
+                    .where({ email })
+                    .update({
+                    lastRequest: new Date(),
+                });
+                return;
+            }
+            else {
+                throw Error("Try again in a few minutes.");
+            }
+        });
+    }
+    routineCleanup() {
+        return __awaiter(this, void 0, void 0, function* () {
+            //dead users
+            yield this.userTable()
+                .whereNotNull("validationHash")
+                .andWhere("validationExpires", "<", new Date())
+                .delete();
+            //dead password requests
+            yield this.userTable()
+                .whereNotNull("resetPwdHash")
+                .andWhere("resetPwdExpires", "<", new Date())
+                .update({ resetPwdHash: null, resetPwdExpires: null });
+        });
     }
     create(inp) {
         return __awaiter(this, void 0, void 0, function* () {
             createUserSchema.validateSync(inp, { strict: true });
             const pwdHash = yield bcrypt.hash(inp.password, 10);
             const validationHash = uuid_1.v4();
+            let expireDate = day()
+                .add(2, "hour")
+                .toDate();
             try {
                 var [pkey] = yield this.userTable()
-                    .insert({ email: inp.email, auth: pwdHash, validationHash })
+                    .insert({ email: inp.email, auth: pwdHash, validationHash, validationExpires: expireDate })
                     .into("user");
             }
             catch (err) {
@@ -149,7 +197,12 @@ class UserAuth {
             const requestId = uuid_1.v4();
             const ids = yield this.userTable()
                 .where({ email: inp.email })
-                .update({ resetPwdHash: requestId });
+                .update({
+                resetPwdHash: requestId,
+                resetPwdExpires: day()
+                    .add(2, "hour")
+                    .toDate(),
+            });
             const link = this._createResetPasswordLink(requestId);
             if (ids || ids.length) {
                 yield this.ctx.mailgun.sendMail({
@@ -182,13 +235,23 @@ class UserAuth {
                 .where({ resetPwdHash: inp.requestId });
         });
     }
+    /** overrideable (default is 10 reqs / 10 secs per route) */
+    _getRequestThrottleMws() {
+        return {
+            createUser: timedQueueMw(),
+            login: timedQueueMw(30, 10000),
+            requestReset: timedQueueMw(),
+            performReset: timedQueueMw(),
+        };
+    }
     userRoutes(Setup) {
         return __awaiter(this, void 0, void 0, function* () {
             const User = this;
             const { yup, withValidation } = Setup;
+            const queues = this._getRequestThrottleMws();
             const json = yield Setup.jsonRoutes((router) => __awaiter(this, void 0, void 0, function* () {
                 Setup.jsonRouteDict(router, {
-                    "/createuser": withValidation({
+                    "/createuser": Setup.withMiddleware([queues.createUser], withValidation({
                         body: yup.object({
                             newUserEmail: yup.string().email(),
                             newUserPwd: yup.string().min(8),
@@ -199,13 +262,14 @@ class UserAuth {
                             password: req.body.newUserPwd,
                         });
                         return { status: "OK" };
-                    })),
-                    "/login": withValidation({
+                    }))),
+                    "/login": Setup.withMiddleware([queues.login], withValidation({
                         body: yup.object({
                             existingUserEmail: yup.string().email(),
                             existingUserPwd: yup.string().min(8),
                         }),
                     }, (req) => __awaiter(this, void 0, void 0, function* () {
+                        yield this.userRequestCap(req.body.existingUserEmail, 15);
                         const user = yield User.find({
                             email: req.body.existingUserEmail,
                             password: req.body.existingUserPwd,
@@ -215,12 +279,13 @@ class UserAuth {
                         }
                         req.session.user = { email: user.email, id: user.id };
                         return { status: "OK" };
-                    })),
-                    "/request-password-reset": withValidation({ body: yup.object({ email: yup.string().email() }) }, (req) => __awaiter(this, void 0, void 0, function* () {
+                    }))),
+                    "/request-password-reset": Setup.withMiddleware([queues.requestReset], withValidation({ body: yup.object({ email: yup.string().email() }) }, (req) => __awaiter(this, void 0, void 0, function* () {
+                        yield this.userRequestCap(req.body.email, 15);
                         yield User.createResetPwdRequest({ email: req.body.email });
                         return { status: "OK" };
-                    })),
-                    "/perform-password-reset": withValidation({
+                    }))),
+                    "/perform-password-reset": Setup.withMiddleware([queues.performReset], withValidation({
                         body: yup.object({
                             pwd1: yup.string().min(8),
                             pwd2: yup.string().min(8),
@@ -229,7 +294,7 @@ class UserAuth {
                     }, (req) => __awaiter(this, void 0, void 0, function* () {
                         yield User.performResetPwd(req.body);
                         return { status: "OK" };
-                    })),
+                    }))),
                     "/logout": Setup.withMethod("all", Setup.withMiddleware([User.throwOnUnauthMw], (req) => __awaiter(this, void 0, void 0, function* () {
                         req.session.user = undefined;
                         return { status: "OK" };
@@ -249,7 +314,7 @@ class UserAuth {
     }
     _renderSimpleMessage(Setup, req, res, title, message) {
         return Setup.nextApp.render(req, res, "/auth/message", {
-            title: message,
+            title: title,
             content: message,
         });
     }
@@ -292,4 +357,33 @@ class UserAuth {
     }
 }
 exports.UserAuth = UserAuth;
+class TimedQueue {
+    constructor(size, wait) {
+        this.size = size;
+        this.wait = wait;
+        this.list = [];
+    }
+    push() {
+        if (this.list.length >= this.size) {
+            throw Error("Wait a bit until attempting again.");
+        }
+        this.list.push(true);
+        setTimeout(() => {
+            this.list.pop();
+        }, this.wait);
+    }
+}
+let timedQueueMw = (size = 10, wait = 10000) => {
+    let queue = new TimedQueue(size, wait);
+    return (req, res, next) => {
+        try {
+            queue.push();
+        }
+        catch (err) {
+            next(err);
+            return;
+        }
+        next();
+    };
+};
 //# sourceMappingURL=user-auth.js.map

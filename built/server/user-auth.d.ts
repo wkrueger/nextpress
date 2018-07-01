@@ -26,10 +26,12 @@ export interface User {
 declare type SchemaType<T> = T extends Yup.ObjectSchema<infer Y> ? Y : never;
 export declare class UserAuth {
     ctx: Nextpress.Context;
+    constructor(ctx: Nextpress.Context);
     _knex: knexModule;
-    constructor(ctx: Nextpress.Context, _knex: knexModule);
     init(): Promise<void>;
     userTable(): knexModule.QueryBuilder;
+    private userRequestCap;
+    routineCleanup(): Promise<void>;
     create(inp: SchemaType<typeof createUserSchema>): Promise<void>;
     validate(hash: string): Promise<User>;
     find(inp: SchemaType<typeof createUserSchema>): Promise<User | undefined>;
@@ -38,6 +40,13 @@ export declare class UserAuth {
     performResetPwd(inp: SchemaType<typeof pwdRequestSchema>): Promise<void>;
     checkSession: (req: Request, res: Response) => void;
     throwOnUnauthMw: RequestHandler;
+    /** overrideable (default is 10 reqs / 10 secs per route) */
+    _getRequestThrottleMws(): {
+        createUser: RequestHandler;
+        login: RequestHandler;
+        requestReset: RequestHandler;
+        performReset: RequestHandler;
+    };
     userRoutes(Setup: RouteSetupHelper): Promise<{
         json: Router;
         html: Router;

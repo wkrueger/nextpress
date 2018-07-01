@@ -5,6 +5,7 @@ import bcrypt = require("bcrypt")
 import ono = require("ono")
 import { RequestHandler, RouteSetupHelper } from ".."
 import { Router, Request, Response } from "express"
+import day = require("dayjs")
 
 const createUserSchema = Yup.object({
   email: Yup.string()
@@ -51,7 +52,9 @@ export interface User {
 type SchemaType<T> = T extends Yup.ObjectSchema<infer Y> ? Y : never
 
 export class UserAuth {
-  constructor(public ctx: Nextpress.Context, public _knex: knexModule) {}
+  constructor(public ctx: Nextpress.Context) {}
+
+  _knex = this.ctx.database.db()
 
   async init() {
     if (!(await this._knex.schema.hasTable("user"))) {
@@ -61,12 +64,53 @@ export class UserAuth {
         table.string("auth", 80)
         table.string("validationHash", 80)
         table.string("resetPwdHash", 80)
+        table.timestamp("validationExpires")
+        table.timestamp("resetPwdExpires")
+        table.timestamp("lastRequest")
       })
     }
+    await this.routineCleanup()
   }
 
   userTable() {
     return this._knex("user")
+  }
+
+  private async userRequestCap(email: string, seconds: number) {
+    if (!email) throw Error("Invalid input.")
+    let result: any[] = await this.userTable()
+      .where({ email })
+      .select("lastRequest")
+    if (!result.length) return
+    let lastReq = result[0].lastRequest
+    if (
+      !lastReq ||
+      day(lastReq)
+        .add(seconds, "second")
+        .isAfter(day())
+    ) {
+      await this.userTable()
+        .where({ email })
+        .update({
+          lastRequest: new Date(),
+        })
+      return
+    } else {
+      throw Error("Try again in a few minutes.")
+    }
+  }
+
+  async routineCleanup() {
+    //dead users
+    await this.userTable()
+      .whereNotNull("validationHash")
+      .andWhere("validationExpires", "<", new Date())
+      .delete()
+    //dead password requests
+    await this.userTable()
+      .whereNotNull("resetPwdHash")
+      .andWhere("resetPwdExpires", "<", new Date())
+      .update({ resetPwdHash: null, resetPwdExpires: null })
   }
 
   async create(inp: SchemaType<typeof createUserSchema>) {
@@ -74,9 +118,13 @@ export class UserAuth {
     const pwdHash = await bcrypt.hash(inp.password, 10)
     const validationHash = uuid()
 
+    let expireDate = day()
+      .add(2, "hour")
+      .toDate()
+
     try {
       var [pkey] = await this.userTable()
-        .insert({ email: inp.email, auth: pwdHash, validationHash })
+        .insert({ email: inp.email, auth: pwdHash, validationHash, validationExpires: expireDate })
         .into("user")
     } catch (err) {
       if ((err.errno || "") === 1062) {
@@ -129,7 +177,12 @@ export class UserAuth {
     const requestId = uuid()
     const ids = await this.userTable()
       .where({ email: inp.email })
-      .update({ resetPwdHash: requestId })
+      .update({
+        resetPwdHash: requestId,
+        resetPwdExpires: day()
+          .add(2, "hour")
+          .toDate(),
+      })
     const link = this._createResetPasswordLink(requestId)
     if (ids || ids.length) {
       await this.ctx.mailgun.sendMail({
@@ -174,67 +227,89 @@ export class UserAuth {
     }
   }
 
+  /** overrideable (default is 10 reqs / 10 secs per route) */
+  _getRequestThrottleMws() {
+    return {
+      createUser: timedQueueMw(),
+      login: timedQueueMw(30, 10000),
+      requestReset: timedQueueMw(),
+      performReset: timedQueueMw(),
+    }
+  }
+
   async userRoutes(Setup: RouteSetupHelper) {
     const User = this
     const { yup, withValidation } = Setup
+    const queues = this._getRequestThrottleMws()
     const json = await Setup.jsonRoutes(async router => {
       Setup.jsonRouteDict(router, {
-        "/createuser": withValidation(
-          {
-            body: yup.object({
-              newUserEmail: yup.string().email(),
-              newUserPwd: yup.string().min(8),
-            }),
-          },
-          async req => {
-            await User.create({
-              email: req.body.newUserEmail,
-              password: req.body.newUserPwd,
-            })
-            return { status: "OK" }
-          },
+        "/createuser": Setup.withMiddleware(
+          [queues.createUser],
+          withValidation(
+            {
+              body: yup.object({
+                newUserEmail: yup.string().email(),
+                newUserPwd: yup.string().min(8),
+              }),
+            },
+            async req => {
+              await User.create({
+                email: req.body.newUserEmail,
+                password: req.body.newUserPwd,
+              })
+              return { status: "OK" }
+            },
+          ),
         ),
 
-        "/login": withValidation(
-          {
-            body: yup.object({
-              existingUserEmail: yup.string().email(),
-              existingUserPwd: yup.string().min(8),
-            }),
-          },
-          async req => {
-            const user = await User.find({
-              email: req.body.existingUserEmail,
-              password: req.body.existingUserPwd,
-            })
-            if (!user) {
-              throw ono({ statusCode: 401 }, "Could not authenticate with what you entered.")
-            }
-            req.session!.user = { email: user.email, id: user.id }
-            return { status: "OK" }
-          },
+        "/login": Setup.withMiddleware(
+          [queues.login],
+          withValidation(
+            {
+              body: yup.object({
+                existingUserEmail: yup.string().email(),
+                existingUserPwd: yup.string().min(8),
+              }),
+            },
+            async req => {
+              await this.userRequestCap(req.body.existingUserEmail, 15)
+              const user = await User.find({
+                email: req.body.existingUserEmail,
+                password: req.body.existingUserPwd,
+              })
+              if (!user) {
+                throw ono({ statusCode: 401 }, "Could not authenticate with what you entered.")
+              }
+              req.session!.user = { email: user.email, id: user.id }
+              return { status: "OK" }
+            },
+          ),
         ),
 
-        "/request-password-reset": withValidation(
-          { body: yup.object({ email: yup.string().email() }) },
-          async req => {
+        "/request-password-reset": Setup.withMiddleware(
+          [queues.requestReset],
+          withValidation({ body: yup.object({ email: yup.string().email() }) }, async req => {
+            await this.userRequestCap(req.body.email, 15)
             await User.createResetPwdRequest({ email: req.body.email })
             return { status: "OK" }
-          },
+          }),
         ),
 
-        "/perform-password-reset": withValidation(
-          {
-            body: yup.object({
-              pwd1: yup.string().min(8),
-              pwd2: yup.string().min(8),
-              requestId: yup.string().required(),
-            }),
-          },
-          async req => {
-            await User.performResetPwd(req.body)
-            return { status: "OK" }
-          },
+        "/perform-password-reset": Setup.withMiddleware(
+          [queues.performReset],
+          withValidation(
+            {
+              body: yup.object({
+                pwd1: yup.string().min(8),
+                pwd2: yup.string().min(8),
+                requestId: yup.string().required(),
+              }),
+            },
+            async req => {
+              await User.performResetPwd(req.body)
+              return { status: "OK" }
+            },
+          ),
         ),
 
         "/logout": Setup.withMethod(
@@ -270,7 +345,7 @@ export class UserAuth {
     message: string,
   ) {
     return Setup.nextApp.render(req, res, "/auth/message", {
-      title: message,
+      title: title,
       content: message,
     })
   }
@@ -320,5 +395,34 @@ export class UserAuth {
 
   _newAccountEmailSubject() {
     return "New account"
+  }
+}
+
+class TimedQueue {
+  constructor(public size: number, public wait: number) {}
+
+  list = [] as boolean[]
+
+  push() {
+    if (this.list.length >= this.size) {
+      throw Error("Wait a bit until attempting again.")
+    }
+    this.list.push(true)
+    setTimeout(() => {
+      this.list.pop()
+    }, this.wait)
+  }
+}
+
+let timedQueueMw: (size?: number, wait?: number) => RequestHandler = (size = 10, wait = 10000) => {
+  let queue = new TimedQueue(size, wait)
+  return (req, res, next) => {
+    try {
+      queue.push()
+    } catch (err) {
+      next(err)
+      return
+    }
+    next()
   }
 }

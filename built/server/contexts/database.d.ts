@@ -10,8 +10,12 @@ declare const _default: {
             name: string;
             user: string;
             password: string;
-            _db: knex.QueryInterface;
-            db(): knex.QueryInterface;
+            _db: knex;
+            init(opts: {
+                currentVersion: number;
+                migration: (trx: knex.Transaction, oldVersion: number, newVersion: number) => Promise<void>;
+            }): Promise<void>;
+            db(): knex;
         };
     };
 };

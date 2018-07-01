@@ -12,7 +12,33 @@ export default {
         name: process.env.DB_NAME!,
         user: process.env.DB_USER!,
         password: process.env.DB_PASS!,
-        _db: (undefined as any) as knex.QueryInterface,
+        _db: (undefined as any) as knex,
+        async init(opts: {
+          currentVersion: number
+          migration: (
+            trx: knex.Transaction,
+            oldVersion: number,
+            newVersion: number,
+          ) => Promise<void>
+        }) {
+          const client = this.db()
+          if (!(await client.schema.hasTable("meta"))) {
+            await client.schema.createTable("meta", table => {
+              table.increments()
+              table
+                .integer("version")
+                .notNullable()
+                .defaultTo(1)
+                .unique()
+            })
+            client.table("meta").insert({ version: 1 })
+          }
+          let oldVersion: number = (await client.table("meta").select("version"))[0].version
+          await client.transaction(async trx => {
+            await opts.migration(trx, oldVersion, opts.currentVersion)
+          })
+          await client.table("meta").update({ version: opts.currentVersion })
+        },
         db() {
           let ctx = this
           if (!this._db) {

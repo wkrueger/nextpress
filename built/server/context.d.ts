@@ -1,4 +1,4 @@
-import { QueryInterface } from "knex";
+import knex = require("knex");
 export declare type ContextMapper = {
     id: string;
     envKeys: string[];
@@ -34,8 +34,12 @@ export declare const defaultMappers: {
                 name: string;
                 user: string;
                 password: string;
-                _db: QueryInterface;
-                db(): QueryInterface;
+                _db: knex;
+                init(opts: {
+                    currentVersion: number;
+                    migration: (trx: knex.Transaction, oldVersion: number, newVersion: number) => Promise<void>;
+                }): Promise<void>;
+                db(): knex;
             };
         };
     };

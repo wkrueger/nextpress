@@ -4,7 +4,7 @@ import fs = require("fs")
 import mailgunMapper from "./contexts/mailgun"
 import databaseMapper from "./contexts/database"
 import websiteMapper from "./contexts/website"
-import { QueryInterface } from "knex"
+import knex = require("knex")
 
 export type ContextMapper = {
   id: string

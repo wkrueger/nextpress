@@ -100,6 +100,15 @@ declare global {
 }
 ```
 
+### Database context
+
+- `ctx.database.db()` gets a knex instance;
+- optional `ctx.database.init({ currentVersion, migration })` contains a helper regarding table creation and migrations.
+
+### Mailgun context
+
+- Ready-to-use `sendMail()` shortcut for the mailgun API.
+
 ## Route setup
 
 The scaffold comes with something like:
@@ -196,22 +205,16 @@ await userAuth.init()
 
 Contains common session auth workflow things.
 
-This is shaped as an OOPish interceptor pattern. Override methods to customize things.
+This is shaped as an OOPish interceptor pattern with a bunch of extension points. Override methods to customize things.
 
-- **init()** This creates an `user` table in the database;
+- `init()` This creates an `user` table in the database;
 
-- Auth workflow
-
-  1.  `create()` creates an unvalidated user and a validation token
-  2.  `validate()` validates an user with the provided hash
-  3.  `find()` looks up an user given email and password. Fails on unvalidated user
-  4.  `createResetPwdRequest()`
-  5.  `findResetPwdRequest()` finds but wont do nothing
-  6.  `performResetPwd()`
+- `routineCleanup()` is meant to be manually added to some scheduled job (hourly expected),
+  cleans up unvalidated users and unused password reset requests. It also is ran along with `init()`
 
 - JSON routes
-  - `gatewayMw` (to be used on express routes)
-  - `userRoutes(opts).json` generates an express router with a set of routes from the above workflow methods (all them POST + JSON)
+  - `throwOnUnauthMw` (to be used on express routes)
+  - `userRoutes(opts).json` generates an express router with a set of routes from the workflow methods (all them POST + JSON)
     - `/createUser` `{ newUserEmail, newUserPwd }`
     - `/login` `{ existingUserEmail, existingUserPwd }`
     - `/request-password-reset` `{ email }`
@@ -220,13 +223,30 @@ This is shaped as an OOPish interceptor pattern. Override methods to customize t
   - `userRoutes(opts).html` generates preset next.js routes for the workflow (add to root app)
     - `/auth/validate?seq=<hash>` validation route the email will link to.
 - GET routes: Links sent to the emails
+
   - `/auth/validate?seq=`
   - `/auth/forgotPassword?seq=`
+
+- Auth workflow (underlying methods for the routes)
+
+  1.  `create()` creates an unvalidated user and a validation token
+  2.  `validate()` validates an user with the provided hash
+  3.  `find()` looks up an user given email and password. Fails on unvalidated user
+  4.  `createResetPwdRequest()`
+  5.  `findResetPwdRequest()` finds but wont do nothing
+  6.  `performResetPwd()`
+
 - Required additional setup:
   - Create a route for displaying simple messages (default path `/auth/message.tsx`), this receives
     the `title` and `content` props.
   - Create a route for the password reset form (default at `/auth/password-reset-form`). This route
     receives the `requestId` prop.
+
+_Behavior:_ By default, auth requests are capped at 10 reqs / 10 sec (most) and 30 reqs / 10 sec
+(login). Each email may see 1 login attempt every 15 seconds. Overrideables to change that are:
+
+- `_userRequestCap`
+- `_getRequestThrottleMws`
 
 TODO
 
