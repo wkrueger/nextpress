@@ -99,7 +99,7 @@ class UserAuth {
             if (!lastReq ||
                 day(lastReq)
                     .add(seconds, "second")
-                    .isAfter(day())) {
+                    .isBefore(day())) {
                 yield this.userTable()
                     .where({ email })
                     .update({
@@ -108,7 +108,7 @@ class UserAuth {
                 return;
             }
             else {
-                throw Error("Try again in a few minutes.");
+                throw Error("Try again in a few seconds.");
             }
         });
     }

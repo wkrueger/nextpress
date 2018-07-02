@@ -87,7 +87,7 @@ export class UserAuth {
       !lastReq ||
       day(lastReq)
         .add(seconds, "second")
-        .isAfter(day())
+        .isBefore(day())
     ) {
       await this.userTable()
         .where({ email })
@@ -96,7 +96,7 @@ export class UserAuth {
         })
       return
     } else {
-      throw Error("Try again in a few minutes.")
+      throw Error("Try again in a few seconds.")
     }
   }
 
@@ -405,7 +405,7 @@ class TimedQueue {
 
   push() {
     if (this.list.length >= this.size) {
-      throw Error("Wait a bit until attempting again.")
+      throw Error("Wait some seconds until attempting again.")
     }
     this.list.push(true)
     setTimeout(() => {
