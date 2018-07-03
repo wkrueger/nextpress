@@ -1,6 +1,8 @@
 # nextpress
 
-Package website things into a module.
+Package website things that could become commmon between projects into a module.
+
+Trying not to worry much about config options, it is of intention to have one big monolythic package.
 
 Currently bundling:
 
@@ -11,8 +13,6 @@ Currently bundling:
 - front-end reacty common things (react, react-dom, redux, redutser, formik...)
   - moved to `nextpress-client` package
 - all with typescript in mind
-
-Trying not to worry much about config options, it is of intention to have one big monolythic package.
 
 ## scaffolding
 
@@ -135,21 +135,18 @@ Adding routes must be done inside this. `helper` comes with a couple of predefin
 
 Ex
 
-- htmlRoutes (create an express router with includes next.js, required middleware and next.js is already included, just set up the additional routes)
-- jsonRoutes (express router for json apis, common middleware already included)
+- `htmlRoutes` (create an express router with includes next.js, and etcetera. Next.js is already included on the end of the stack, additional routes you write are added BEFORE the next.js route)
+- `jsonRoutes` (express router for json apis, common middleware already included)
 
-The 2 methods above RETURN a router, you still has to write `app.use(router)` to bind it to the main express instance.
+The 2 methods above RETURN a router, you still has to write `app.use(router)` to bind it to the main express instance. The helper also contains things like:
 
 ```js
 {
+  /** wrap a middleware in a try-catch-next */
   tryMw,
-  /** a reference to the next.js app, which has the renderer */
-  nextApp: this.nextApp,
-  /** next.js default middleware */
-  nextMw,
   /** declare json routes in a simplified way */
   jsonRouteDict,
-  /** for use on jsonRouteDict - set http method, default is POST */
+  /** for use on jsonRouteDict - set another http method, default is POST */
   withMethod,
   /** for use on jsonRouteDict - run middleware before */
   withMiddleware,
@@ -157,6 +154,10 @@ The 2 methods above RETURN a router, you still has to write `app.use(router)` to
   withValidation,
   /** yup link for creating validation rules */
   yup,
+  /** a reference to the next.js app, which has the renderer */
+  nextApp: this.nextApp,
+  /** next.js default middleware */
+  nextMw,  
 }
 ```
 
@@ -168,6 +169,7 @@ server.routeSetup = async (app, setup) => {
   const html = await setup.htmlRoutes(async router => {
     router.get(
       "/",
+      //dont do this.
       setup.tryMw((req, res) => {
         if (!req.session!.user) {
           return setup.nextApp.render(req, res, "/unauth")
@@ -195,6 +197,8 @@ server.routeSetup = async (app, setup) => {
 server.run()
 ```
 
+`jsonRouteDict` and the `withX` are candy for declaring JSON routes.
+
 ## Auth boilerplate
 
 ```ts
@@ -213,21 +217,24 @@ This is shaped as an OOPish interceptor pattern with a bunch of extension points
   cleans up unvalidated users and unused password reset requests. It also is ran along with `init()`
 
 - JSON routes
-  - `throwOnUnauthMw` (to be used on express routes)
-  - `userRoutes(opts).json` generates an express router with a set of routes from the workflow methods (all them POST + JSON)
+
+  - `throwOnUnauthMw` (to be used on express routes behind an auth/session gate)
+  - `userRoutes(opts).json` generates an express router with a set of routes from the workflow methods (all them POST + JSON). You are supposed to create your auth forms then AJAX-invoke these.
     - `/createUser` `{ newUserEmail, newUserPwd }`
     - `/login` `{ existingUserEmail, existingUserPwd }`
     - `/request-password-reset` `{ email }`
     - `/perform-password-reset` `{ pwd1, pwd2, requestId }`
     - `/logout`
-  - `userRoutes(opts).html` generates preset next.js routes for the workflow (add to root app)
-    - `/auth/validate?seq=<hash>` validation route the email will link to.
-- GET routes: Links sent to the emails
+  - `userRoutes(opts).html` generates preset next.js (html+GET) routes which are called back from e-mails:
 
-  - `/auth/validate?seq=`
-  - `/auth/forgotPassword?seq=`
+    - `/auth/validate?seq=<hash>` redirects to a success message (see below)
+    - `/auth/forgotPassword?seq=` redirects to a custom form (see below)
 
-- Auth workflow (underlying methods for the routes)
+  - Required additional setup:
+    - Create a route for displaying simple messages (default path `/auth/message.tsx`), this receives the `title` and `content` props.
+    - Create a route for the password reset form (default at `/auth/password-reset-form`). This route receives the `requestId` prop.
+
+- Auth workflow (underlying methods for the routes, in case one wants to override them)
 
   1.  `create()` creates an unvalidated user and a validation token
   2.  `validate()` validates an user with the provided hash
@@ -235,12 +242,6 @@ This is shaped as an OOPish interceptor pattern with a bunch of extension points
   4.  `createResetPwdRequest()`
   5.  `findResetPwdRequest()` finds but wont do nothing
   6.  `performResetPwd()`
-
-- Required additional setup:
-  - Create a route for displaying simple messages (default path `/auth/message.tsx`), this receives
-    the `title` and `content` props.
-  - Create a route for the password reset form (default at `/auth/password-reset-form`). This route
-    receives the `requestId` prop.
 
 _Behavior:_ By default, auth requests are capped at 10 reqs / 10 sec (most) and 30 reqs / 10 sec
 (login). Each email may see 1 login attempt every 15 seconds. Overrideables to change that are:
@@ -254,4 +255,4 @@ all of the rest
 
 ## Big fat caveat
 
-Modules/dependencies currently rely on yarn, will prob not work under npm or pnpm.
+Modules/dependencies currently rely on flat node_modules.

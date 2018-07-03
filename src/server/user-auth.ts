@@ -315,7 +315,9 @@ export class UserAuth {
         "/logout": Setup.withMethod(
           "all",
           Setup.withMiddleware([User.throwOnUnauthMw], async req => {
-            req.session!.user = undefined
+            await new Promise(res => {
+              req.session!.destroy(res)
+            })
             return { status: "OK" }
           }),
         ),

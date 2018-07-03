@@ -296,7 +296,9 @@ class UserAuth {
                         return { status: "OK" };
                     }))),
                     "/logout": Setup.withMethod("all", Setup.withMiddleware([User.throwOnUnauthMw], (req) => __awaiter(this, void 0, void 0, function* () {
-                        req.session.user = undefined;
+                        yield new Promise(res => {
+                            req.session.destroy(res);
+                        });
                         return { status: "OK" };
                     }))),
                 });
@@ -365,7 +367,7 @@ class TimedQueue {
     }
     push() {
         if (this.list.length >= this.size) {
-            throw Error("Wait a bit until attempting again.");
+            throw Error("Wait some seconds until attempting again.");
         }
         this.list.push(true);
         setTimeout(() => {
