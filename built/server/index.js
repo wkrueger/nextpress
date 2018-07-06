@@ -43,8 +43,8 @@ class Server {
                 next(err);
             }
         };
-        if (!ctx.loadedContexts.has('default.website')) {
-            throw Error('Server required the default.website context to be used.');
+        if (!ctx.loadedContexts.has("default.website")) {
+            throw Error("Server required the default.website context to be used.");
         }
     }
     get nextApp() {
@@ -52,7 +52,7 @@ class Server {
             this._nextApp = nextjs({
                 dev: process.env.NODE_ENV !== "production",
                 dir: this.ctx.projectRoot,
-                conf: this.nextConfig(),
+                conf: this.getNextjsConfig(),
             });
         return this._nextApp;
     }
@@ -62,6 +62,27 @@ class Server {
     routeSetup(app, helper) {
         return __awaiter(this, void 0, void 0, function* () {
             app.use(yield helper.htmlRoutes());
+        });
+    }
+    createSessionStore() {
+        if (this.ctx.database) {
+            const StoreConstructor = mysqlSession(expressSession);
+            return new StoreConstructor({
+                user: this.ctx.database.user,
+                password: this.ctx.database.password,
+                database: this.ctx.database.name,
+            });
+        }
+    }
+    createSessionMw(store) {
+        return expressSession({
+            secret: this.ctx.website.sessionSecret,
+            cookie: {
+                maxAge: 1000 * 60 * 60 * 24 * 7,
+            },
+            resave: false,
+            saveUninitialized: false,
+            store,
         });
     }
     /**
@@ -74,24 +95,8 @@ class Server {
             if (this.ctx.website.logRequests) {
                 expressApp.use(morgan("short"));
             }
-            let store = undefined;
-            if (this.ctx.database) {
-                const StoreConstructor = mysqlSession(expressSession);
-                store = new StoreConstructor({
-                    user: this.ctx.database.user,
-                    password: this.ctx.database.password,
-                    database: this.ctx.database.name,
-                });
-            }
-            const sessionMw = expressSession({
-                secret: this.ctx.website.sessionSecret,
-                cookie: {
-                    maxAge: 1000 * 60 * 60 * 24 * 7,
-                },
-                resave: false,
-                saveUninitialized: false,
-                store,
-            });
+            const store = this.createSessionStore();
+            const sessionMw = this.createSessionMw(store);
             //fixme optional and scoped middleware
             expressApp.use(sessionMw);
             yield this.routeSetup(expressApp, this._routeSetupHelper());
@@ -101,7 +106,7 @@ class Server {
     /**
      * the next.config.js
      */
-    nextConfig() {
+    getNextjsConfig() {
         const withCSS = require("@zeit/next-css");
         const ForkTsCheckerWebpackPlugin = require("fork-ts-checker-webpack-plugin");
         const withTypescript = require("@zeit/next-typescript");

@@ -1,6 +1,6 @@
 {
   "name": "@proerd/nextpress",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "main": "built/index.js",
   "typings": "built/index.d.ts",
   "dependencies": {
@@ -37,7 +37,8 @@
     "typescript": "2.9"
   },
   "scripts": {
-    "tsc": "tsc"
+    "tsc": "tsc",
+    "prepublishOnly": "npm run tsc"
   },
   "peerDependencies": {
     "bcrypt": "^2.0.1"

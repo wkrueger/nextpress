@@ -30,8 +30,12 @@ export default {
                 .notNullable()
                 .defaultTo(1)
                 .unique()
+              table
+                .integer("fwVersion")
+                .notNullable()
+                .defaultTo(1)
             })
-            client.table("meta").insert({ version: 1 })
+            await client.table("meta").insert({ version: 1 })
           }
           let oldVersion: number = (await client.table("meta").select("version"))[0].version
           await client.transaction(async trx => {

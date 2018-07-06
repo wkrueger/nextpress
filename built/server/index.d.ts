@@ -14,6 +14,8 @@ declare class Server {
      * this is meant to be overriden in order to set the server routes.
      */
     routeSetup(app: ExpressApp, helper: RouteSetupHelper): Promise<void>;
+    createSessionStore(): any;
+    createSessionMw(store: any): express.RequestHandler;
     /**
      * all set, run
      */
@@ -21,7 +23,8 @@ declare class Server {
     /**
      * the next.config.js
      */
-    nextConfig(): any;
+    getNextjsConfig(): any;
+    jsonErrorHandler: express.ErrorRequestHandler;
     /**
      * helpers available on the routeSetup method
      */
@@ -54,7 +57,6 @@ declare class Server {
         yup: typeof yup;
         express: typeof express;
     };
-    jsonErrorHandler: express.ErrorRequestHandler;
 }
 export declare type Omit<T, K> = Pick<T, Exclude<keyof T, K>>;
 export interface RouteDictItem<Replace = {}> {

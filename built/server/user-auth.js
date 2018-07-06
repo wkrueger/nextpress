@@ -73,11 +73,11 @@ class UserAuth {
                     table.increments();
                     table.string("email", 30).unique();
                     table.string("auth", 80);
-                    table.string("validationHash", 80);
-                    table.string("resetPwdHash", 80);
-                    table.timestamp("validationExpires");
-                    table.timestamp("resetPwdExpires");
-                    table.timestamp("lastRequest");
+                    table.string("validationHash", 80).nullable();
+                    table.string("resetPwdHash", 80).nullable();
+                    table.timestamp("validationExpires").nullable();
+                    table.timestamp("resetPwdExpires").nullable();
+                    table.timestamp("lastRequest").nullable();
                 });
             }
             yield this.routineCleanup();

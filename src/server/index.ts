@@ -13,8 +13,8 @@ export type RouteSetupHelper = ReturnType<typeof Server.prototype._routeSetupHel
 
 class Server {
   constructor(public ctx: Nextpress.Context) {
-    if (!ctx.loadedContexts.has('default.website')) {
-      throw Error('Server required the default.website context to be used.')
+    if (!ctx.loadedContexts.has("default.website")) {
+      throw Error("Server required the default.website context to be used.")
     }
   }
 
@@ -26,7 +26,7 @@ class Server {
       this._nextApp = nextjs({
         dev: process.env.NODE_ENV !== "production",
         dir: this.ctx.projectRoot,
-        conf: this.nextConfig(),
+        conf: this.getNextjsConfig(),
       })
     return this._nextApp
   }
@@ -38,25 +38,19 @@ class Server {
     app.use(await helper.htmlRoutes())
   }
 
-  /**
-   * all set, run
-   */
-  async run() {
-    await this.nextApp.prepare()
-    const expressApp = express()
-    if (this.ctx.website.logRequests) {
-      expressApp.use(morgan("short"))  
-    }
-    let store: any = undefined
+  createSessionStore() {
     if (this.ctx.database) {
       const StoreConstructor = (mysqlSession as any)(expressSession)
-      store = new StoreConstructor({
+      return new StoreConstructor({
         user: this.ctx.database.user,
         password: this.ctx.database.password,
         database: this.ctx.database.name,
       })
     }
-    const sessionMw = expressSession({
+  }
+
+  createSessionMw(store: any) {
+    return expressSession({
       secret: this.ctx.website.sessionSecret,
       cookie: {
         maxAge: 1000 * 60 * 60 * 24 * 7,
@@ -65,6 +59,19 @@ class Server {
       saveUninitialized: false,
       store,
     })
+  }
+
+  /**
+   * all set, run
+   */
+  async run() {
+    await this.nextApp.prepare()
+    const expressApp = express()
+    if (this.ctx.website.logRequests) {
+      expressApp.use(morgan("short"))
+    }
+    const store = this.createSessionStore()
+    const sessionMw = this.createSessionMw(store)
     //fixme optional and scoped middleware
     expressApp.use(sessionMw)
     await this.routeSetup(expressApp, this._routeSetupHelper())
@@ -74,7 +81,7 @@ class Server {
   /**
    * the next.config.js
    */
-  nextConfig() {
+  getNextjsConfig() {
     const withCSS = require("@zeit/next-css")
     const ForkTsCheckerWebpackPlugin = require("fork-ts-checker-webpack-plugin")
     const withTypescript = require("@zeit/next-typescript")
@@ -89,6 +96,24 @@ class Server {
     }
 
     return withTypescript(withCSS(opts))
+  }
+
+  jsonErrorHandler: express.ErrorRequestHandler = (err, req, res, next) => {
+    try {
+      console.error(err)
+      if (err.sql && !err.statusCode) {
+        err.message = "DB error."
+      }
+      if (process.env.NODE_ENV !== "production") {
+        return res.status(err.statusCode || 500).json({ error: { ...err, message: err.message } })
+      } else {
+        return res
+          .status(err.statusCode || 500)
+          .json({ error: { message: err.message, code: err.code } })
+      }
+    } catch (err) {
+      next(err)
+    }
   }
 
   /**
@@ -151,24 +176,6 @@ class Server {
       yup,
       /* express lib reference */
       express,
-    }
-  }
-
-  jsonErrorHandler: express.ErrorRequestHandler = (err, req, res, next) => {
-    try {
-      console.error(err)
-      if (err.sql && !err.statusCode) {
-        err.message = "DB error."
-      }
-      if (process.env.NODE_ENV !== "production") {
-        return res.status(err.statusCode || 500).json({ error: { ...err, message: err.message } })
-      } else {
-        return res
-          .status(err.statusCode || 500)
-          .json({ error: { message: err.message, code: err.code } })
-      }
-    } catch (err) {
-      next(err)
     }
   }
 }

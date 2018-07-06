@@ -33,8 +33,12 @@ exports.default = {
                                     .notNullable()
                                     .defaultTo(1)
                                     .unique();
+                                table
+                                    .integer("fwVersion")
+                                    .notNullable()
+                                    .defaultTo(1);
                             });
-                            client.table("meta").insert({ version: 1 });
+                            yield client.table("meta").insert({ version: 1 });
                         }
                         let oldVersion = (yield client.table("meta").select("version"))[0].version;
                         yield client.transaction((trx) => __awaiter(this, void 0, void 0, function* () {
