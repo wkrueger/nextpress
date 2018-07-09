@@ -12,7 +12,10 @@ export type ExpressApp = ReturnType<typeof express>
 export type RouteSetupHelper = ReturnType<typeof Server.prototype._routeSetupHelper>
 
 class Server {
-  constructor(public ctx: Nextpress.Context) {
+  constructor(
+    public ctx: Nextpress.Context,
+    public isProduction = process.env.NODE_ENV === "production",
+  ) {
     if (!ctx.loadedContexts.has("default.website")) {
       throw Error("Server required the default.website context to be used.")
     }
@@ -20,11 +23,11 @@ class Server {
 
   errorRoute = "/error"
 
-  _nextApp?: nextjs.Server
-  get nextApp() {
+  private _nextApp?: nextjs.Server
+  getNextApp() {
     if (!this._nextApp)
       this._nextApp = nextjs({
-        dev: process.env.NODE_ENV !== "production",
+        dev: !this.isProduction,
         dir: this.ctx.projectRoot,
         conf: this.getNextjsConfig(),
       })
@@ -65,7 +68,11 @@ class Server {
    * all set, run
    */
   async run() {
-    await this.nextApp.prepare()
+    if (this.isProduction) {
+      const nextBuild = require("next/dist/build").default
+      await nextBuild(this.ctx.projectRoot, this.getNextjsConfig())
+    }
+    await this.getNextApp().prepare()
     const expressApp = express()
     if (this.ctx.website.logRequests) {
       expressApp.use(morgan("short"))
@@ -85,11 +92,12 @@ class Server {
     const withCSS = require("@zeit/next-css")
     const ForkTsCheckerWebpackPlugin = require("fork-ts-checker-webpack-plugin")
     const withTypescript = require("@zeit/next-typescript")
+    let that = this
 
     const opts = {
       webpack(config: any, options: any) {
         // Do not run type checking twice:
-        if (options.isServer && process.env.NODE_ENV !== "production")
+        if (options.isServer && !that.isProduction)
           config.plugins.push(new ForkTsCheckerWebpackPlugin())
         return config
       },
@@ -123,7 +131,7 @@ class Server {
     let that = this
     type RouteHelper = express.Router
     //next mw
-    const _nextHandle = this.nextApp.getRequestHandler()
+    const _nextHandle = this.getNextApp().getRequestHandler()
     const nextMw = tryMw((req, res) => {
       const parsedUrl = urlparse(req.url, true)
       _nextHandle(req, res, parsedUrl)
@@ -138,7 +146,7 @@ class Server {
         const router = express.Router() as express.Router
         await fn(router)
         const errorMw: express.ErrorRequestHandler = (err, req, res, next) => {
-          that.nextApp.render(req, res, "/error", { message: String(err) })
+          that.getNextApp().render(req, res, "/error", { message: String(err) })
         }
         router.use(errorMw)
         router.use(nextMw)
@@ -161,7 +169,7 @@ class Server {
       /** wraps a middleware in try/catch/next */
       tryMw,
       /** a reference to the next.js app, which has the renderer */
-      nextApp: this.nextApp,
+      nextApp: this.getNextApp,
       /** next.js default middleware */
       nextMw,
       /** declare json routes in a simplified way */

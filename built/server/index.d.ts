@@ -6,10 +6,11 @@ export declare type ExpressApp = ReturnType<typeof express>;
 export declare type RouteSetupHelper = ReturnType<typeof Server.prototype._routeSetupHelper>;
 declare class Server {
     ctx: Nextpress.Context;
-    constructor(ctx: Nextpress.Context);
+    isProduction: boolean;
+    constructor(ctx: Nextpress.Context, isProduction?: boolean);
     errorRoute: string;
-    _nextApp?: nextjs.Server;
-    readonly nextApp: nextjs.Server;
+    private _nextApp?;
+    getNextApp(): nextjs.Server;
     /**
      * this is meant to be overriden in order to set the server routes.
      */
@@ -43,7 +44,7 @@ declare class Server {
         /** wraps a middleware in try/catch/next */
         tryMw: (fn: (req: express.Request, res: express.Response) => void | Promise<void>) => (req: express.Request, res: express.Response, next: express.NextFunction) => Promise<void>;
         /** a reference to the next.js app, which has the renderer */
-        nextApp: nextjs.Server;
+        nextApp: () => nextjs.Server;
         /** next.js default middleware */
         nextMw: (req: express.Request, res: express.Response, next: express.NextFunction) => Promise<void>;
         /** declare json routes in a simplified way */

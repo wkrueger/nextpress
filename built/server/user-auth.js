@@ -315,7 +315,7 @@ class UserAuth {
         });
     }
     _renderSimpleMessage(Setup, req, res, title, message) {
-        return Setup.nextApp.render(req, res, "/auth/message", {
+        return Setup.nextApp().render(req, res, "/auth/message", {
             title: title,
             content: message,
         });

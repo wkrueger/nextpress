@@ -21,8 +21,9 @@ var context_1 = require("./context");
 exports.ContextFactory = context_1.default;
 exports.defaultMappers = context_1.defaultMappers;
 class Server {
-    constructor(ctx) {
+    constructor(ctx, isProduction = process.env.NODE_ENV === "production") {
         this.ctx = ctx;
+        this.isProduction = isProduction;
         this.errorRoute = "/error";
         this.jsonErrorHandler = (err, req, res, next) => {
             try {
@@ -47,10 +48,10 @@ class Server {
             throw Error("Server required the default.website context to be used.");
         }
     }
-    get nextApp() {
+    getNextApp() {
         if (!this._nextApp)
             this._nextApp = nextjs({
-                dev: process.env.NODE_ENV !== "production",
+                dev: !this.isProduction,
                 dir: this.ctx.projectRoot,
                 conf: this.getNextjsConfig(),
             });
@@ -90,7 +91,11 @@ class Server {
      */
     run() {
         return __awaiter(this, void 0, void 0, function* () {
-            yield this.nextApp.prepare();
+            if (this.isProduction) {
+                const nextBuild = require("next/dist/build").default;
+                yield nextBuild(this.ctx.projectRoot, this.getNextjsConfig());
+            }
+            yield this.getNextApp().prepare();
             const expressApp = express();
             if (this.ctx.website.logRequests) {
                 expressApp.use(morgan("short"));
@@ -110,10 +115,11 @@ class Server {
         const withCSS = require("@zeit/next-css");
         const ForkTsCheckerWebpackPlugin = require("fork-ts-checker-webpack-plugin");
         const withTypescript = require("@zeit/next-typescript");
+        let that = this;
         const opts = {
             webpack(config, options) {
                 // Do not run type checking twice:
-                if (options.isServer && process.env.NODE_ENV !== "production")
+                if (options.isServer && !that.isProduction)
                     config.plugins.push(new ForkTsCheckerWebpackPlugin());
                 return config;
             },
@@ -126,7 +132,7 @@ class Server {
     _routeSetupHelper() {
         let that = this;
         //next mw
-        const _nextHandle = this.nextApp.getRequestHandler();
+        const _nextHandle = this.getNextApp().getRequestHandler();
         const nextMw = tryMw((req, res) => {
             const parsedUrl = url_1.parse(req.url, true);
             _nextHandle(req, res, parsedUrl);
@@ -142,7 +148,7 @@ class Server {
                     const router = express.Router();
                     yield fn(router);
                     const errorMw = (err, req, res, next) => {
-                        that.nextApp.render(req, res, "/error", { message: String(err) });
+                        that.getNextApp().render(req, res, "/error", { message: String(err) });
                     };
                     router.use(errorMw);
                     router.use(nextMw);
@@ -168,7 +174,7 @@ class Server {
             /** wraps a middleware in try/catch/next */
             tryMw,
             /** a reference to the next.js app, which has the renderer */
-            nextApp: this.nextApp,
+            nextApp: this.getNextApp,
             /** next.js default middleware */
             nextMw,
             /** declare json routes in a simplified way */

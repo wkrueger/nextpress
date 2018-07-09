@@ -346,7 +346,7 @@ export class UserAuth {
     title: string,
     message: string,
   ) {
-    return Setup.nextApp.render(req, res, "/auth/message", {
+    return Setup.nextApp().render(req, res, "/auth/message", {
       title: title,
       content: message,
     })
