@@ -16,6 +16,8 @@ Currently bundling:
 
 ## scaffolding
 
+** CURRENTLY OUTDATED **
+
 ```
 npm i @proerd/nextpress
 ```
