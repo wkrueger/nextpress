@@ -30,7 +30,7 @@ export declare class UserAuth {
     _knex: knexModule;
     init(): Promise<void>;
     userTable(): knexModule.QueryBuilder;
-    private userRequestCap;
+    private checkAndUpdateUserRequestCap;
     routineCleanup(): Promise<void>;
     create(inp: SchemaType<typeof createUserSchema>): Promise<void>;
     validate(hash: string): Promise<User>;
@@ -40,12 +40,23 @@ export declare class UserAuth {
     performResetPwd(inp: SchemaType<typeof pwdRequestSchema>): Promise<void>;
     checkSession: (req: Request, res: Response) => void;
     throwOnUnauthMw: RequestHandler;
-    /** overrideable (default is 10 reqs / 10 secs per route) */
+    /**
+     * overrideable (default is 10 reqs / 10 secs per route)
+     * this counts all the requests this server receives
+     */
     _getRequestThrottleMws(): {
         createUser: RequestHandler;
         login: RequestHandler;
         requestReset: RequestHandler;
         performReset: RequestHandler;
+    };
+    /**
+     * overrideable
+     * this is a per-user time limit for the operations
+     */
+    _getPerUserWaitTime(): {
+        login: number;
+        requestPasswordReset: number;
     };
     userRoutes(Setup: RouteSetupHelper): Promise<{
         json: Router;

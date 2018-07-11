@@ -86,7 +86,7 @@ class UserAuth {
     userTable() {
         return this._knex("user");
     }
-    userRequestCap(email, seconds) {
+    checkAndUpdateUserRequestCap(email, seconds) {
         return __awaiter(this, void 0, void 0, function* () {
             if (!email)
                 throw Error("Invalid input.");
@@ -235,13 +235,26 @@ class UserAuth {
                 .where({ resetPwdHash: inp.requestId });
         });
     }
-    /** overrideable (default is 10 reqs / 10 secs per route) */
+    /**
+     * overrideable (default is 10 reqs / 10 secs per route)
+     * this counts all the requests this server receives
+     */
     _getRequestThrottleMws() {
         return {
             createUser: timedQueueMw(),
             login: timedQueueMw(30, 10000),
             requestReset: timedQueueMw(),
             performReset: timedQueueMw(),
+        };
+    }
+    /**
+     * overrideable
+     * this is a per-user time limit for the operations
+     */
+    _getPerUserWaitTime() {
+        return {
+            login: 5,
+            requestPasswordReset: 15,
         };
     }
     userRoutes(Setup) {
@@ -269,7 +282,7 @@ class UserAuth {
                             existingUserPwd: yup.string().min(8),
                         }),
                     }, (req) => __awaiter(this, void 0, void 0, function* () {
-                        yield this.userRequestCap(req.body.existingUserEmail, 15);
+                        yield this.checkAndUpdateUserRequestCap(req.body.existingUserEmail, this._getPerUserWaitTime().login);
                         const user = yield User.find({
                             email: req.body.existingUserEmail,
                             password: req.body.existingUserPwd,
@@ -281,7 +294,7 @@ class UserAuth {
                         return { status: "OK" };
                     }))),
                     "/request-password-reset": Setup.withMiddleware([queues.requestReset], withValidation({ body: yup.object({ email: yup.string().email() }) }, (req) => __awaiter(this, void 0, void 0, function* () {
-                        yield this.userRequestCap(req.body.email, 15);
+                        yield this.checkAndUpdateUserRequestCap(req.body.email, this._getPerUserWaitTime().requestPasswordReset);
                         yield User.createResetPwdRequest({ email: req.body.email });
                         return { status: "OK" };
                     }))),
