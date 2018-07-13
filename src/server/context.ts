@@ -42,17 +42,19 @@ export default function(i: { projectRoot: string; mappers: ContextMapper[] }) {
     [] as string[],
   )
   const required = pluginKeys.filter(k => pluginOptional.indexOf(k) === -1)
-  const envfilePath = path.resolve(i.projectRoot, "envfile.env")
-  try {
-    fs.statSync(envfilePath)
-  } catch (err) {
-    const scaffold = required.reduce((out, item) => {
-      return out + `${item}=fill\n`
-    }, "")
-    fs.writeFileSync(envfilePath, scaffold)
-    throw Error("envfile not found. Fill up the generated one.")
+  if (!process.env.NO_ENVFILE) {
+    const envfilePath = path.resolve(i.projectRoot, "envfile.env")
+    try {
+      fs.statSync(envfilePath)
+    } catch (err) {
+      const scaffold = required.reduce((out, item) => {
+        return out + `${item}=fill\n`
+      }, "")
+      fs.writeFileSync(envfilePath, scaffold)
+      throw Error("envfile not found. Fill up the generated one.")
+    }
+    dotenv.config({ path: path.resolve(i.projectRoot, "envfile.env") })
   }
-  dotenv.config({ path: path.resolve(i.projectRoot, "envfile.env") })
   for (let x = 0; x < required.length; x++) {
     const key = required[x]
     if (!process.env[key]) throw Error(`Required env key ${key} not defined.`)
@@ -73,7 +75,7 @@ export default function(i: { projectRoot: string; mappers: ContextMapper[] }) {
     requireContext(...contextIds: string[]) {
       for (let i = 0; i < contextIds.length; i++) {
         const contextId = contextIds[i]
-        if (this.loadedContexts.has(contextId)) {
+        if (!this.loadedContexts.has(contextId)) {
           throw Error(`context mapper with id: ${contextId} required but not found.`)
         }
       }

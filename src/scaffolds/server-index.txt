@@ -1,15 +1,23 @@
 import path = require("path")
 import { Server, ContextFactory, defaultMappers } from "@proerd/nextpress"
+//
+;(async () => {
+  const context = ContextFactory({
+    projectRoot: path.resolve(__dirname, ".."),
+    mappers: [defaultMappers.website, defaultMappers.mailgun, defaultMappers.database],
+  })
 
-const context = ContextFactory({
-  projectRoot: path.resolve(__dirname, '..'),
-  mappers: [
-    defaultMappers.website,
-    defaultMappers.mailgun,
-    defaultMappers.database,
-  ]
+  await context.database.init({
+    currentVersion: 1,
+    async migration() {},
+  })
+
+  const server = new Server(context)
+
+  server.run()
+})()
+
+process.on("unhandledRejection", (...arg: any[]) => {
+  console.error("unhandledRejection", ...arg)
+  process.exit(1)
 })
-
-const server = new Server(context)
-
-server.run()

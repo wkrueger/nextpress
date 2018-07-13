@@ -20,13 +20,14 @@ function buildscript(projectRoot) {
         scaffold() {
             checkNCreate(["server", "tsconfig.json"], () => JSON.stringify(serverTsconfig, null, 2));
             checkNCreate(["server", "index.ts"], () => loadScaffoldFile("server-index.txt"));
-            checkNCreate(["pages", "index.tsx"], () => "console.log('Hello world')");
+            checkNCreate(["pages", "index.tsx"], () => loadScaffoldFile("client-index.txt"));
             checkNCreate(["app", "index.tsx"], () => "");
             checkNCreate(["static", "hello.txt"], () => "Use this folder to host static assets.");
-            checkNCreate([".babelrc"], () => JSON.stringify(babelRc, null, 2));
+            checkNCreate([".babelrc.js"], () => loadScaffoldFile("babelrc.txt"));
             checkNCreate(["tsconfig.json"], () => JSON.stringify(clientTsConfig, null, 2));
             checkNCreate([".gitignore"], () => loadScaffoldFile("gitignore.scaff.txt"));
             checkNCreate(["pages", "client-global.d.ts"], () => loadScaffoldFile("client-global-types.txt"));
+            checkNCreate([".vscode", "launch.json"], () => loadScaffoldFile("vscode-launch.txt"));
         },
         compileServer() {
             return __awaiter(this, void 0, void 0, function* () {
@@ -66,7 +67,7 @@ function buildscript(projectRoot) {
         }
     }
     function loadScaffoldFile(pathInsideScaffoldFolder) {
-        return fs.readFileSync(path_1.resolve(libroot, "src", "scaffolds", "server-index.txt"));
+        return fs.readFileSync(path_1.resolve(libroot, "src", "scaffolds", pathInsideScaffoldFolder));
     }
 }
 exports.buildscript = buildscript;
@@ -99,9 +100,5 @@ const clientTsConfig = {
         downlevelIteration: true,
     },
     include: ["pages", "app"],
-};
-const babelRc = {
-    presets: ["next/babel", "@zeit/next-typescript/babel"],
-    plugins: [["transform-define", { "process.env.WEBSITE_ROOT": process.env.WEBSITE_ROOT }]],
 };
 //# sourceMappingURL=buildscript.js.map

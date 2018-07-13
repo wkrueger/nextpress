@@ -147,10 +147,12 @@ class Server {
                 return __awaiter(this, void 0, void 0, function* () {
                     const router = express.Router();
                     yield fn(router);
-                    const errorMw = (err, req, res, next) => {
-                        that.getNextApp().render(req, res, "/error", { message: String(err) });
-                    };
-                    router.use(errorMw);
+                    if (that.errorRoute) {
+                        const errorMw = (err, req, res, next) => {
+                            that.getNextApp().render(req, res, that.errorRoute, { message: String(err) });
+                        };
+                        router.use(errorMw);
+                    }
                     router.use(nextMw);
                     return router;
                 });
@@ -174,7 +176,7 @@ class Server {
             /** wraps a middleware in try/catch/next */
             tryMw,
             /** a reference to the next.js app, which has the renderer */
-            nextApp: this.getNextApp,
+            nextApp: this.getNextApp.bind(this),
             /** next.js default middleware */
             nextMw,
             /** declare json routes in a simplified way */

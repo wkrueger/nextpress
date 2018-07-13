@@ -14,6 +14,11 @@ Currently bundling:
   - moved to `nextpress-client` package
 - all with typescript in mind
 
+Limitations (FIXMEs)
+
+- Design for a coupled "monolithic" small server (API and website in the same project, not necessarily in the same script)
+- The wesite part uses session for auth, which in is directly coupled to the database
+
 ## scaffolding
 
 ```
@@ -50,6 +55,8 @@ WEBSITE_ROOT="http://localhost:8080"
 WEBSITE_PORT=8080
 WEBSITE_SESSION_SECRET=iamsecret
 ```
+
+If you don't want it to create an envfile (ex: netlify, heroku), set `NO_ENVFILE=1`. Required envvar check still takes place.
 
 Folder structure goes like this:
 

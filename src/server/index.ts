@@ -145,10 +145,12 @@ class Server {
       async htmlRoutes(fn: (h: RouteHelper) => Promise<void> = async () => undefined) {
         const router = express.Router() as express.Router
         await fn(router)
-        const errorMw: express.ErrorRequestHandler = (err, req, res, next) => {
-          that.getNextApp().render(req, res, "/error", { message: String(err) })
+        if (that.errorRoute) {
+          const errorMw: express.ErrorRequestHandler = (err, req, res, next) => {
+            that.getNextApp().render(req, res, that.errorRoute, { message: String(err) })
+          }
+          router.use(errorMw)
         }
-        router.use(errorMw)
         router.use(nextMw)
         return router
       },
@@ -169,7 +171,7 @@ class Server {
       /** wraps a middleware in try/catch/next */
       tryMw,
       /** a reference to the next.js app, which has the renderer */
-      nextApp: this.getNextApp,
+      nextApp: this.getNextApp.bind(this) as () => nextjs.Server,
       /** next.js default middleware */
       nextMw,
       /** declare json routes in a simplified way */
