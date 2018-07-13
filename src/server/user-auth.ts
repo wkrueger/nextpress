@@ -52,7 +52,9 @@ export interface User {
 type SchemaType<T> = T extends Yup.ObjectSchema<infer Y> ? Y : never
 
 export class UserAuth {
-  constructor(public ctx: Nextpress.Context) {}
+  constructor(public ctx: Nextpress.Context) {
+    ctx.requireContext("default.mailgun", "default.database", "default.website")
+  }
 
   _knex = this.ctx.database.db()
 

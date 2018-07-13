@@ -39,7 +39,14 @@ function default_1(i) {
     const pluginContext = (i.mappers || []).reduce((out, item) => {
         return Object.assign({}, out, item.envContext());
     }, {});
-    return Object.assign({ projectRoot: i.projectRoot, loadedContexts: new Set((i.mappers || []).map(m => m.id)) }, pluginContext);
+    return Object.assign({ projectRoot: i.projectRoot, loadedContexts: new Set((i.mappers || []).map(m => m.id)) }, pluginContext, { requireContext(...contextIds) {
+            for (let i = 0; i < contextIds.length; i++) {
+                const contextId = contextIds[i];
+                if (this.loadedContexts.has(contextId)) {
+                    throw Error(`context mapper with id: ${contextId} required but not found.`);
+                }
+            }
+        } });
 }
 exports.default = default_1;
 //# sourceMappingURL=context.js.map

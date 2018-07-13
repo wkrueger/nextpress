@@ -65,6 +65,7 @@ class UserAuth {
                 next(err);
             }
         };
+        ctx.requireContext("default.mailgun", "default.database", "default.website");
     }
     init() {
         return __awaiter(this, void 0, void 0, function* () {

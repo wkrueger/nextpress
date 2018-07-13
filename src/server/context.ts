@@ -70,6 +70,14 @@ export default function(i: { projectRoot: string; mappers: ContextMapper[] }) {
     projectRoot: i.projectRoot,
     loadedContexts: new Set<string>((i.mappers || []).map(m => m.id)),
     ...pluginContext,
+    requireContext(...contextIds: string[]) {
+      for (let i = 0; i < contextIds.length; i++) {
+        const contextId = contextIds[i]
+        if (this.loadedContexts.has(contextId)) {
+          throw Error(`context mapper with id: ${contextId} required but not found.`)
+        }
+      }
+    },
   } as Nextpress.Context
 }
 
@@ -78,6 +86,7 @@ declare global {
     interface DefaultContext extends GenDefaultContext {
       projectRoot: string
       loadedContexts: Set<string>
+      requireContext: (...contextIds: string[]) => void
     }
     interface CustomContext {}
     interface Context extends DefaultContext, CustomContext {}

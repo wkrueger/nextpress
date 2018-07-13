@@ -16,32 +16,34 @@ Currently bundling:
 
 ## scaffolding
 
-** CURRENTLY OUTDATED **
-
 ```
-npm i @proerd/nextpress
+yarn add @proerd/nextpress
 ```
 
-Create a `build.js` file with:
+> ps: we rely upon yarn, npm client is not much tested and may not work due to node_modules
+> folder structur differences.
 
-```js
-const nextpress = require("nextpress")
-nextpress.buildscript(__dirname).run()
+Add to your package.json:
+
+```json
+{
+  "scripts": {
+    "nextpress": "nextpress"
+  }
+}
 ```
 
-Run:
+Invoke:
 
 ```
-node build scaffold
+yarn run nextpress --scaffold
 ```
-
-Also currently available:
-
-- `node build compileServer` (typescript watch task for the server code)
 
 There will be two `tsconfig.json`s around. The one on the root is invoked by next.js when you start the server. The one inside the `server` folder needs to be manually built.
 
-Server (compiled) will be available at `./nextpress/index.js` and is expected to be run with .nextpress cwd. The first time you run it it may complain something and create an `envfile.env` which you should edit.
+On VSCode: F1 > Run build task > Watch at server/tsconfig.json.
+
+Server (compiled) will be available at `./nextpress/<file>.js`. The first time you run it it may complain something and create an `envfile.env` which you should edit.
 
 ```
 WEBSITE_ROOT="http://localhost:8080"
@@ -55,7 +57,7 @@ Folder structure goes like this:
   |_ .next (next.js things)
   |_ .nextpress (the compiled server)
   |_ app (put your client-side here)
-  |_ pages (next.js suggested "pages" folder)
+  |_ pages (next.js suggested "pages" folder for router entries)
   |_ server
   |_ static
   | ...
@@ -102,6 +104,10 @@ declare global {
 }
 ```
 
+**Website root**
+
+While on the server the website root path can be easily acessed through the context, on the client `process.env.WEBSITE_ROOT` is used (it is replaced on the build stage -- see the `.babelrc` for details).
+
 ### Database context
 
 - `ctx.database.db()` gets a knex instance;
@@ -109,7 +115,7 @@ declare global {
 
 ### Mailgun context
 
-- Ready-to-use `sendMail()` shortcut for the mailgun API.
+- Ready-to-use `sendMail()` shortcut for the mailgun API. Required is using the `UserAuth` module.
 
 ## Route setup
 

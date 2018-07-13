@@ -6,29 +6,20 @@ const libroot = resolve(__dirname, "..")
 export function buildscript(projectRoot: string) {
   const tsPath = resolve(projectRoot, "node_modules", ".bin", "tsc")
   const serverTsConfigPath = resolve(projectRoot, "server", "tsconfig.json")
-  //const serverPath = resolve(projectRoot, ".nextpress", "server", "index.js")
   const relativeTo = (to: string) => relative(projectRoot, to)
 
   const tasks = {
     scaffold() {
       checkNCreate(["server", "tsconfig.json"], () => JSON.stringify(serverTsconfig, null, 2))
-      checkNCreate(["server", "index.ts"], () =>
-        fs.readFileSync(resolve(libroot, "src", "scaffolds", "server-index.txt")),
-      )
+      checkNCreate(["server", "index.ts"], () => loadScaffoldFile("server-index.txt"))
       checkNCreate(["pages", "index.tsx"], () => "console.log('Hello world')")
       checkNCreate(["app", "index.tsx"], () => "")
       checkNCreate(["static", "hello.txt"], () => "Use this folder to host static assets.")
       checkNCreate([".babelrc"], () => JSON.stringify(babelRc, null, 2))
       checkNCreate(["tsconfig.json"], () => JSON.stringify(clientTsConfig, null, 2))
-      checkNCreate(["envfile.env"], () => "")
-      checkNCreate([".gitignore"], () => {
-        const gitscaff = fs.readFileSync(
-          resolve(libroot, "src", "scaffolds", "gitignore.scaff.txt"),
-        )
-        return gitscaff
-      })
+      checkNCreate([".gitignore"], () => loadScaffoldFile("gitignore.scaff.txt"))
       checkNCreate(["pages", "client-global.d.ts"], () =>
-        fs.readFileSync(resolve(libroot, "src", "scaffolds", "client-global-types.txt")),
+        loadScaffoldFile("client-global-types.txt"),
       )
     },
 
@@ -42,6 +33,7 @@ export function buildscript(projectRoot: string) {
       build.runTask(tasks)
     },
     tool: build,
+    tasks,
   }
 
   function checkNCreate(paths: string[], content: () => string | Buffer) {
@@ -62,26 +54,33 @@ export function buildscript(projectRoot: string) {
     try {
       fs.statSync(filepath)
     } catch (err) {
+      console.log("Creating", filepath)
       fs.writeFileSync(filepath, content())
     }
+  }
+
+  function loadScaffoldFile(pathInsideScaffoldFolder: string) {
+    return fs.readFileSync(resolve(libroot, "src", "scaffolds", "server-index.txt"))
   }
 }
 
 const serverTsconfig = {
   include: ["."],
   compilerOptions: {
-    target: "es6",
+    target: "es2017",
     module: "commonjs",
     moduleResolution: "node",
     outDir: "../.nextpress",
     strict: true,
     noUnusedLocals: true,
+    sourceMap: true,
+    pretty: false,
   },
 }
 
 const clientTsConfig = {
   compilerOptions: {
-    target: "es5",
+    target: "esnext",
     module: "commonjs",
     moduleResolution: "node",
     noUnusedLocals: true,
@@ -91,10 +90,13 @@ const clientTsConfig = {
     strict: true,
     sourceMap: false,
     esModuleInterop: true,
+    experimentalDecorators: true,
+    downlevelIteration: true,
   },
   include: ["pages", "app"],
 }
 
 const babelRc = {
   presets: ["next/babel", "@zeit/next-typescript/babel"],
+  plugins: [["transform-define", { "process.env.WEBSITE_ROOT": process.env.WEBSITE_ROOT }]],
 }
