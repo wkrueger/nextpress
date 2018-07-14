@@ -27,12 +27,19 @@ declare type SchemaType<T> = T extends Yup.ObjectSchema<infer Y> ? Y : never;
 export declare class UserAuth {
     ctx: Nextpress.Context;
     constructor(ctx: Nextpress.Context);
+    sendMail: (inp: {
+        email: string;
+        subject: string;
+        html: string;
+    }) => Promise<any>;
     _knex: knexModule;
     init(): Promise<void>;
     userTable(): knexModule.QueryBuilder;
     private checkAndUpdateUserRequestCap;
     routineCleanup(): Promise<void>;
-    create(inp: SchemaType<typeof createUserSchema>): Promise<void>;
+    create(inp: SchemaType<typeof createUserSchema>, opts?: {
+        askForValidation: boolean;
+    }): Promise<void>;
     validate(hash: string): Promise<User>;
     find(inp: SchemaType<typeof createUserSchema>): Promise<User | undefined>;
     createResetPwdRequest(inp: SchemaType<typeof emailSchema>): Promise<void>;

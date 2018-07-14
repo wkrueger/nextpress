@@ -14,14 +14,14 @@ exports.default = {
     envKeys: ["MAILGUN_FROM", "MAILGUN_DOMAIN", "MAILGUN_API_KEY"],
     optionalKeys: [],
     envContext() {
-        return {
+        let out = {
             mailgun: {
                 from: process.env.MAILGUN_FROM,
                 domain: process.env.MAILGUN_DOMAIN,
                 apiKey: process.env.MAILGUN_API_KEY,
                 sendMail(inp) {
                     return __awaiter(this, void 0, void 0, function* () {
-                        let ctx = this;
+                        let ctx = out.mailgun;
                         const body = yield new Promise((res, rej) => {
                             request({
                                 method: "POST",
@@ -52,6 +52,7 @@ exports.default = {
                 },
             },
         };
+        return out;
     },
 };
 //# sourceMappingURL=mailgun.js.map

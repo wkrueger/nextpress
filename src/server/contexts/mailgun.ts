@@ -5,13 +5,13 @@ export default {
   envKeys: ["MAILGUN_FROM", "MAILGUN_DOMAIN", "MAILGUN_API_KEY"],
   optionalKeys: [] as string[],
   envContext() {
-    return {
+    let out = {
       mailgun: {
         from: process.env.MAILGUN_FROM!,
         domain: process.env.MAILGUN_DOMAIN!,
         apiKey: process.env.MAILGUN_API_KEY!,
         async sendMail(inp: { email: string; subject: string; html: string }) {
-          let ctx = this
+          let ctx = out.mailgun
           const body: any = await new Promise((res, rej) => {
             request(
               {
@@ -43,5 +43,6 @@ export default {
         },
       },
     }
+    return out
   },
 }

@@ -251,11 +251,11 @@ This is shaped as an OOPish interceptor pattern with a bunch of extension points
 
 - Auth workflow (underlying methods for the routes, in case one wants to override them)
 
-  1.  `create()` creates an unvalidated user and a validation token
+  1.  `create()` creates an unvalidated user and a validation token, sends validation email. Validation may be disabled (see opts).
   2.  `validate()` validates an user with the provided hash
   3.  `find()` looks up an user given email and password. Fails on unvalidated user
-  4.  `createResetPwdRequest()`
-  5.  `findResetPwdRequest()` finds but wont do nothing
+  4.  `createResetPwdRequest()` creates the request, sends the email.
+  5.  `findResetPwdRequest()` finds if request exists but no additional side effect
   6.  `performResetPwd()`
 
 _Behavior:_ By default, auth requests are capped at 10 reqs / 10 sec (most) and 30 reqs / 10 sec
@@ -263,6 +263,8 @@ _Behavior:_ By default, auth requests are capped at 10 reqs / 10 sec (most) and 
 
 - `_userRequestCap`
 - `_getRequestThrottleMws`
+
+OBS: As login is persisted on session, nexts `Router.push` won't work after logging in. A full page reload is required.
 
 TODO
 

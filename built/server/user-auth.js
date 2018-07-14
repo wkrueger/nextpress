@@ -47,6 +47,7 @@ const pwdRequestSchema = Yup.object({
 class UserAuth {
     constructor(ctx) {
         this.ctx = ctx;
+        this.sendMail = this.ctx.mailgun.sendMail;
         this._knex = this.ctx.database.db();
         this.checkSession = (req, res) => {
             if (!req.session)
@@ -127,14 +128,16 @@ class UserAuth {
                 .update({ resetPwdHash: null, resetPwdExpires: null });
         });
     }
-    create(inp) {
+    create(inp, opts = { askForValidation: true }) {
         return __awaiter(this, void 0, void 0, function* () {
             createUserSchema.validateSync(inp, { strict: true });
             const pwdHash = yield bcrypt.hash(inp.password, 10);
-            const validationHash = uuid_1.v4();
-            let expireDate = day()
-                .add(2, "hour")
-                .toDate();
+            const validationHash = opts.askForValidation ? uuid_1.v4() : null;
+            let expireDate = opts.askForValidation
+                ? day()
+                    .add(2, "hour")
+                    .toDate()
+                : null;
             try {
                 var [pkey] = yield this.userTable()
                     .insert({ email: inp.email, auth: pwdHash, validationHash, validationExpires: expireDate })
@@ -146,19 +149,21 @@ class UserAuth {
                     throw ono(err, { statusCode: 400 }, "This user already exists.");
                 }
             }
-            try {
-                const link = this._createValidationLink(validationHash);
-                yield this.ctx.mailgun.sendMail({
-                    email: inp.email,
-                    subject: this._newAccountEmailSubject(),
-                    html: this._validationMailHTML({ address: inp.email, validationLink: link }),
-                });
-            }
-            catch (err) {
-                yield this.userTable()
-                    .where({ id: pkey })
-                    .delete();
-                throw err;
+            if (opts.askForValidation) {
+                try {
+                    const link = this._createValidationLink(validationHash);
+                    yield this.sendMail({
+                        email: inp.email,
+                        subject: this._newAccountEmailSubject(),
+                        html: this._validationMailHTML({ address: inp.email, validationLink: link }),
+                    });
+                }
+                catch (err) {
+                    yield this.userTable()
+                        .where({ id: pkey })
+                        .delete();
+                    throw err;
+                }
             }
         });
     }
@@ -206,7 +211,7 @@ class UserAuth {
             });
             const link = this._createResetPasswordLink(requestId);
             if (ids || ids.length) {
-                yield this.ctx.mailgun.sendMail({
+                yield this.sendMail({
                     email: inp.email,
                     subject: this._pwdResetEmailSubject(),
                     html: this._resetPwdMailHTML({ address: inp.email, validationLink: link }),

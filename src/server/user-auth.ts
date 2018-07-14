@@ -56,6 +56,8 @@ export class UserAuth {
     ctx.requireContext("default.mailgun", "default.database", "default.website")
   }
 
+  sendMail = this.ctx.mailgun.sendMail
+
   _knex = this.ctx.database.db()
 
   async init() {
@@ -115,14 +117,16 @@ export class UserAuth {
       .update({ resetPwdHash: null, resetPwdExpires: null })
   }
 
-  async create(inp: SchemaType<typeof createUserSchema>) {
+  async create(inp: SchemaType<typeof createUserSchema>, opts = { askForValidation: true }) {
     createUserSchema.validateSync(inp, { strict: true })
     const pwdHash = await bcrypt.hash(inp.password, 10)
-    const validationHash = uuid()
+    const validationHash = opts.askForValidation ? uuid() : null
 
-    let expireDate = day()
-      .add(2, "hour")
-      .toDate()
+    let expireDate = opts.askForValidation
+      ? day()
+          .add(2, "hour")
+          .toDate()
+      : null
 
     try {
       var [pkey] = await this.userTable()
@@ -135,18 +139,20 @@ export class UserAuth {
       }
     }
 
-    try {
-      const link = this._createValidationLink(validationHash)
-      await this.ctx.mailgun.sendMail({
-        email: inp.email,
-        subject: this._newAccountEmailSubject(),
-        html: this._validationMailHTML({ address: inp.email, validationLink: link }),
-      })
-    } catch (err) {
-      await this.userTable()
-        .where({ id: pkey })
-        .delete()
-      throw err
+    if (opts.askForValidation) {
+      try {
+        const link = this._createValidationLink(validationHash!)
+        await this.sendMail({
+          email: inp.email,
+          subject: this._newAccountEmailSubject(),
+          html: this._validationMailHTML({ address: inp.email, validationLink: link }),
+        })
+      } catch (err) {
+        await this.userTable()
+          .where({ id: pkey })
+          .delete()
+        throw err
+      }
     }
   }
 
@@ -187,7 +193,7 @@ export class UserAuth {
       })
     const link = this._createResetPasswordLink(requestId)
     if (ids || ids.length) {
-      await this.ctx.mailgun.sendMail({
+      await this.sendMail({
         email: inp.email,
         subject: this._pwdResetEmailSubject(),
         html: this._resetPwdMailHTML({ address: inp.email, validationLink: link }),
