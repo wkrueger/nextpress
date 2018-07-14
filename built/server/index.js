@@ -17,6 +17,9 @@ const mysqlSession = require("express-mysql-session");
 const url_1 = require("url");
 const ono = require("ono");
 const yup = require("yup");
+const rimraf = require("rimraf");
+const util_1 = require("util");
+const path_1 = require("path");
 var context_1 = require("./context");
 exports.ContextFactory = context_1.default;
 exports.defaultMappers = context_1.defaultMappers;
@@ -92,7 +95,9 @@ class Server {
     run() {
         return __awaiter(this, void 0, void 0, function* () {
             if (this.isProduction) {
+                console.log("Production mode. Building...");
                 const nextBuild = require("next/dist/build").default;
+                yield util_1.promisify(rimraf)(path_1.resolve(this.ctx.projectRoot, ".next"));
                 yield nextBuild(this.ctx.projectRoot, this.getNextjsConfig());
             }
             yield this.getNextApp().prepare();

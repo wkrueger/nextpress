@@ -6,6 +6,9 @@ import mysqlSession = require("express-mysql-session")
 import { parse as urlparse } from "url"
 import ono = require("ono")
 import yup = require("yup")
+import rimraf = require("rimraf")
+import { promisify } from "util"
+import { resolve } from "path"
 export { default as ContextFactory, defaultMappers } from "./context"
 
 export type ExpressApp = ReturnType<typeof express>
@@ -69,7 +72,9 @@ class Server {
    */
   async run() {
     if (this.isProduction) {
+      console.log("Production mode. Building...")
       const nextBuild = require("next/dist/build").default
+      await promisify(rimraf)(resolve(this.ctx.projectRoot, ".next"))
       await nextBuild(this.ctx.projectRoot, this.getNextjsConfig())
     }
     await this.getNextApp().prepare()
