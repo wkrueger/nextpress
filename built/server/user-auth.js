@@ -54,8 +54,8 @@ class UserAuth {
                 throw ono({ statusCode: 401 }, "Unauthorized");
             if (!req.session.user)
                 throw ono({ statusCode: 401 }, "Unauthorized");
-            res.setHeader("X-User-Id", req.session.user.id);
-            res.setHeader("X-User-Email", req.session.user.email);
+            //res.setHeader("X-User-Id", req.session.user.id)
+            //res.setHeader("X-User-Email", req.session.user.email)
         };
         this.throwOnUnauthMw = (req, res, next) => {
             try {

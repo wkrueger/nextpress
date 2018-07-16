@@ -222,8 +222,8 @@ export class UserAuth {
   checkSession = (req: Request, res: Response) => {
     if (!req.session) throw ono({ statusCode: 401 }, "Unauthorized")
     if (!req.session.user) throw ono({ statusCode: 401 }, "Unauthorized")
-    res.setHeader("X-User-Id", req.session.user.id)
-    res.setHeader("X-User-Email", req.session.user.email)
+    //res.setHeader("X-User-Id", req.session.user.id)
+    //res.setHeader("X-User-Email", req.session.user.email)
   }
 
   throwOnUnauthMw: RequestHandler = (req, res, next) => {
