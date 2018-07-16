@@ -10,6 +10,8 @@ Currently bundling:
 - next.js as a view layer
 - a default configs setup with `dotenv`
 - some scaffolding (I'd like less but huh)
+- knex
+- an auth workflow
 - front-end reacty common things (react, react-dom, redux, redutser, formik...)
   - moved to `nextpress-client` package
 - all with typescript in mind
