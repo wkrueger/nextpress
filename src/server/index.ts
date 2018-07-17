@@ -48,7 +48,7 @@ class Server {
   /**
    * this is meant to be overriden in order to set the server routes.
    */
-  async routeSetup(app: ExpressApp, helper: RouteSetupHelper): Promise<void> {
+  async routeSetup({ app, helper }: { app: ExpressApp; helper: RouteSetupHelper }): Promise<void> {
     app.use(await helper.htmlRoutes())
   }
 
@@ -85,8 +85,14 @@ class Server {
       await promisify(rimraf)(resolve(this.ctx.projectRoot, ".next"))
       await nextBuild(this.ctx.projectRoot, this.getNextjsConfig())
     }
-    await this.getNextApp().prepare()
     const expressApp = express()
+    await this.setupGlobalMiddleware(expressApp)
+    await this.routeSetup({ app: expressApp, helper: this._routeSetupHelper() })
+    expressApp.listen(this.ctx.website.port, () => console.log(this.ctx.website.port))
+  }
+
+  async setupGlobalMiddleware(expressApp: express.Application) {
+    await this.getNextApp().prepare()
     if (this.ctx.website.logRequests) {
       expressApp.use(morgan("short"))
     }
@@ -94,8 +100,7 @@ class Server {
     const sessionMw = this.createSessionMw(store)
     //fixme optional and scoped middleware
     expressApp.use(sessionMw)
-    await this.routeSetup(expressApp, this._routeSetupHelper())
-    expressApp.listen(this.ctx.website.port, () => console.log(this.ctx.website.port))
+    return expressApp
   }
 
   /**

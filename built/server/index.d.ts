@@ -20,13 +20,17 @@ declare class Server {
     /**
      * this is meant to be overriden in order to set the server routes.
      */
-    routeSetup(app: ExpressApp, helper: RouteSetupHelper): Promise<void>;
+    routeSetup({ app, helper }: {
+        app: ExpressApp;
+        helper: RouteSetupHelper;
+    }): Promise<void>;
     createSessionStore(): any;
     createSessionMw(store: any): express.RequestHandler;
     /**
      * all set, run
      */
     run(): Promise<void>;
+    setupGlobalMiddleware(expressApp: express.Application): Promise<express.Application>;
     /**
      * the next.config.js
      */

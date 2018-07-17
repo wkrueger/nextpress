@@ -27,8 +27,7 @@ Limitations (FIXMEs)
 yarn add @proerd/nextpress
 ```
 
-> ps: we rely upon yarn, npm client is not much tested and may not work due to node_modules
-> folder structur differences.
+> ps: we rely upon yarn, npm client is not much tested and may not work due to node_modules folder structure differences.
 
 Add to your package.json:
 
@@ -50,7 +49,7 @@ There will be two `tsconfig.json`s around. The one on the root is invoked by nex
 
 On VSCode: F1 > Run build task > Watch at server/tsconfig.json.
 
-Server (compiled) will be available at `./nextpress/<file>.js`. The first time you run it it may complain something and create an `envfile.env` which you should edit. The required variables depend on which `defaultContexts` that are added on `server/index.ts`.
+Server (compiled) will be available at `.nextpress/<file>.js`. The first time you run it it may complain something and create an `envfile.env` which you should edit. The required variables depend on which `defaultContexts` are added on `server/index.ts`.
 
 ```
 WEBSITE_ROOT="http://localhost:8080"
@@ -133,10 +132,14 @@ Currently includes:
 - Typescript (ofcourse)
 - CSS (no modules)
 - Sass (no modules)
-- Lodash plugin (reduce bundle size)
+- Lodash plugin (reduce bundle size, this effects even if you are not directly using lodash)
 - Bundle analyzer runs if `WEBSITE_BUNDLE_ANALYZER` is provided
 
 Override it by replacing the corresponding `Server#getNextJsConfig` method.
+
+## dev vs. production
+
+If starting with `NODE_ENV = production`, the server runs the equivalent of `next build`, then `next start`.
 
 ## Route setup
 

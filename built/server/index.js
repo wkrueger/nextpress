@@ -70,7 +70,7 @@ class Server {
     /**
      * this is meant to be overriden in order to set the server routes.
      */
-    routeSetup(app, helper) {
+    routeSetup({ app, helper }) {
         return __awaiter(this, void 0, void 0, function* () {
             app.use(yield helper.htmlRoutes());
         });
@@ -107,8 +107,15 @@ class Server {
                 yield util_1.promisify(rimraf)(path_1.resolve(this.ctx.projectRoot, ".next"));
                 yield nextBuild(this.ctx.projectRoot, this.getNextjsConfig());
             }
-            yield this.getNextApp().prepare();
             const expressApp = express();
+            yield this.setupGlobalMiddleware(expressApp);
+            yield this.routeSetup({ app: expressApp, helper: this._routeSetupHelper() });
+            expressApp.listen(this.ctx.website.port, () => console.log(this.ctx.website.port));
+        });
+    }
+    setupGlobalMiddleware(expressApp) {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield this.getNextApp().prepare();
             if (this.ctx.website.logRequests) {
                 expressApp.use(morgan("short"));
             }
@@ -116,8 +123,7 @@ class Server {
             const sessionMw = this.createSessionMw(store);
             //fixme optional and scoped middleware
             expressApp.use(sessionMw);
-            yield this.routeSetup(expressApp, this._routeSetupHelper());
-            expressApp.listen(this.ctx.website.port, () => console.log(this.ctx.website.port));
+            return expressApp;
         });
     }
     /**
