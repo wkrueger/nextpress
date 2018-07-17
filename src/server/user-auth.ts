@@ -1,7 +1,6 @@
 import Yup = require("yup")
 import knexModule = require("knex")
 import { v4 as uuid } from "uuid"
-import bcrypt = require("bcrypt")
 import ono = require("ono")
 import { RequestHandler, RouteSetupHelper } from ".."
 import { Router, Request, Response } from "express"
@@ -54,6 +53,13 @@ type SchemaType<T> = T extends Yup.ObjectSchema<infer Y> ? Y : never
 export class UserAuth {
   constructor(public ctx: Nextpress.Context) {
     ctx.requireContext("default.mailgun", "default.database", "default.website")
+  }
+
+  _bcrypt: any
+  get bcrypt(): typeof import("bcrypt") {
+    if (this._bcrypt) return this._bcrypt
+    this._bcrypt = require("bcrypt")
+    return this._bcrypt
   }
 
   sendMail = this.ctx.mailgun.sendMail
@@ -119,7 +125,7 @@ export class UserAuth {
 
   async create(inp: SchemaType<typeof createUserSchema>, opts = { askForValidation: true }) {
     createUserSchema.validateSync(inp, { strict: true })
-    const pwdHash = await bcrypt.hash(inp.password, 10)
+    const pwdHash = await this.bcrypt.hash(inp.password, 10)
     const validationHash = opts.askForValidation ? uuid() : null
 
     let expireDate = opts.askForValidation
@@ -175,7 +181,7 @@ export class UserAuth {
       .select("id", "email", "auth", "validationHash")
       .where({ email: inp.email })
     if (!users.length) return undefined
-    const check = await bcrypt.compare(inp.password, users[0].auth!)
+    const check = await this.bcrypt.compare(inp.password, users[0].auth!)
     if (users[0].validationHash!) throw Error("User needs to validate his email first.")
     return check ? { id: users[0].id, email: users[0].email } : undefined
   }
@@ -215,7 +221,7 @@ export class UserAuth {
     if (!found) throw Error("Invalid request")
     if (inp.pwd1 !== inp.pwd2) throw Error("Password confirmation failed.")
     await this.userTable()
-      .update({ resetPwdHash: null, auth: await bcrypt.hash(inp.pwd1, 10) })
+      .update({ resetPwdHash: null, auth: await this.bcrypt.hash(inp.pwd1, 10) })
       .where({ resetPwdHash: inp.requestId })
   }
 

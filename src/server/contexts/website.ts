@@ -1,7 +1,7 @@
 export default {
   id: "default.website",
   envKeys: ["WEBSITE_ROOT", "WEBSITE_PORT", "WEBSITE_SESSION_SECRET"],
-  optionalKeys: ["WEBSITE_LOG_REQUESTS"],
+  optionalKeys: ["WEBSITE_LOG_REQUESTS", "WEBSITE_BUNDLE_ANALYZER"],
   envContext() {
     return {
       website: {
@@ -9,6 +9,7 @@ export default {
         port: Number(process.env.WEBSITE_PORT!),
         sessionSecret: process.env.WEBSITE_SESSION_SECRET!,
         logRequests: Boolean(process.env.WEBSITE_LOG_REQUESTS),
+        bundleAnalyzer: Boolean(process.env.WEBSITE_BUNDLE_ANALYZER),
       },
     }
   },

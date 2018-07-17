@@ -14,6 +14,8 @@ export { default as ContextFactory, defaultMappers } from "./context"
 export type ExpressApp = ReturnType<typeof express>
 export type RouteSetupHelper = ReturnType<typeof Server.prototype._routeSetupHelper>
 
+//const orUndefined = <T>(i: T) => i as T | undefined
+
 class Server {
   constructor(
     public ctx: Nextpress.Context,
@@ -24,7 +26,13 @@ class Server {
     }
   }
 
-  errorRoute = "/error"
+  options = {
+    errorRoute: "/error",
+    bundleAnalyzer: {
+      analyzeServer: false,
+      analyzeBrowser: true,
+    },
+  }
 
   private _nextApp?: nextjs.Server
   getNextApp() {
@@ -95,20 +103,30 @@ class Server {
    */
   getNextjsConfig() {
     const withCSS = require("@zeit/next-css")
-    const ForkTsCheckerWebpackPlugin = require("fork-ts-checker-webpack-plugin")
+    const withSass = require("@zeit/next-sass")
+    const LodashPlugin = require("lodash-webpack-plugin")
     const withTypescript = require("@zeit/next-typescript")
     let that = this
 
     const opts = {
       webpack(config: any, options: any) {
         // Do not run type checking twice:
-        if (options.isServer && !that.isProduction)
+        if (options.isServer && !that.isProduction) {
+          const ForkTsCheckerWebpackPlugin = require("fork-ts-checker-webpack-plugin")
           config.plugins.push(new ForkTsCheckerWebpackPlugin())
+        }
+        config.plugins.push(new LodashPlugin())
         return config
       },
     }
-
-    return withTypescript(withCSS(opts))
+    let out = this.isProduction
+      ? withTypescript(withCSS(withSass(opts)))
+      : withSass(withTypescript(withCSS(opts)))
+    if (this.ctx.website.bundleAnalyzer) {
+      const withBundleAnalyzer = require("@zeit/next-bundle-analyzer")
+      out = withBundleAnalyzer({ ...out, ...this.options.bundleAnalyzer })
+    }
+    return out
   }
 
   jsonErrorHandler: express.ErrorRequestHandler = (err, req, res, next) => {
@@ -150,9 +168,9 @@ class Server {
       async htmlRoutes(fn: (h: RouteHelper) => Promise<void> = async () => undefined) {
         const router = express.Router() as express.Router
         await fn(router)
-        if (that.errorRoute) {
+        if (that.options.errorRoute) {
           const errorMw: express.ErrorRequestHandler = (err, req, res, next) => {
-            that.getNextApp().render(req, res, that.errorRoute, { message: String(err) })
+            that.getNextApp().render(req, res, that.options.errorRoute, { message: String(err) })
           }
           router.use(errorMw)
         }

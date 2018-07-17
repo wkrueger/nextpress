@@ -8,6 +8,7 @@ declare const _default: {
             port: number;
             sessionSecret: string;
             logRequests: boolean;
+            bundleAnalyzer: boolean;
         };
     };
 };

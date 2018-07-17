@@ -10,7 +10,6 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 const Yup = require("yup");
 const uuid_1 = require("uuid");
-const bcrypt = require("bcrypt");
 const ono = require("ono");
 const day = require("dayjs");
 const createUserSchema = Yup.object({
@@ -67,6 +66,12 @@ class UserAuth {
             }
         };
         ctx.requireContext("default.mailgun", "default.database", "default.website");
+    }
+    get bcrypt() {
+        if (this._bcrypt)
+            return this._bcrypt;
+        this._bcrypt = require("bcrypt");
+        return this._bcrypt;
     }
     init() {
         return __awaiter(this, void 0, void 0, function* () {
@@ -131,7 +136,7 @@ class UserAuth {
     create(inp, opts = { askForValidation: true }) {
         return __awaiter(this, void 0, void 0, function* () {
             createUserSchema.validateSync(inp, { strict: true });
-            const pwdHash = yield bcrypt.hash(inp.password, 10);
+            const pwdHash = yield this.bcrypt.hash(inp.password, 10);
             const validationHash = opts.askForValidation ? uuid_1.v4() : null;
             let expireDate = opts.askForValidation
                 ? day()
@@ -191,7 +196,7 @@ class UserAuth {
                 .where({ email: inp.email });
             if (!users.length)
                 return undefined;
-            const check = yield bcrypt.compare(inp.password, users[0].auth);
+            const check = yield this.bcrypt.compare(inp.password, users[0].auth);
             if (users[0].validationHash)
                 throw Error("User needs to validate his email first.");
             return check ? { id: users[0].id, email: users[0].email } : undefined;
@@ -237,7 +242,7 @@ class UserAuth {
             if (inp.pwd1 !== inp.pwd2)
                 throw Error("Password confirmation failed.");
             yield this.userTable()
-                .update({ resetPwdHash: null, auth: yield bcrypt.hash(inp.pwd1, 10) })
+                .update({ resetPwdHash: null, auth: yield this.bcrypt.hash(inp.pwd1, 10) })
                 .where({ resetPwdHash: inp.requestId });
         });
     }

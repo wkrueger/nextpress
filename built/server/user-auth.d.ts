@@ -27,6 +27,8 @@ declare type SchemaType<T> = T extends Yup.ObjectSchema<infer Y> ? Y : never;
 export declare class UserAuth {
     ctx: Nextpress.Context;
     constructor(ctx: Nextpress.Context);
+    _bcrypt: any;
+    readonly bcrypt: typeof import("bcrypt");
     sendMail: (inp: {
         email: string;
         subject: string;

@@ -53,20 +53,21 @@ export declare const defaultMappers: {
                 port: number;
                 sessionSecret: string;
                 logRequests: boolean;
+                bundleAnalyzer: boolean;
             };
         };
     };
 };
-type GetMapperContext<T> = T extends {
+declare type GetMapperContext<T> = T extends {
     envContext: () => infer R;
 } ? R : never;
-type Values<T> = T[keyof T];
-type Intersecion = GetMapperContext<Values<typeof defaultMappers>>;
-type GetKeys<U> = U extends Record<infer K, any> ? K : never;
-type UnionToIntersection<U extends object> = {
+declare type Values<T> = T[keyof T];
+declare type Intersecion = GetMapperContext<Values<typeof defaultMappers>>;
+declare type GetKeys<U> = U extends Record<infer K, any> ? K : never;
+declare type UnionToIntersection<U extends object> = {
     [K in GetKeys<U>]: U extends Record<K, infer T> ? T : never;
 };
-type GenDefaultContext = UnionToIntersection<Intersecion>;
+declare type GenDefaultContext = UnionToIntersection<Intersecion>;
 export default function (i: {
     projectRoot: string;
     mappers: ContextMapper[];

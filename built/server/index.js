@@ -23,11 +23,18 @@ const path_1 = require("path");
 var context_1 = require("./context");
 exports.ContextFactory = context_1.default;
 exports.defaultMappers = context_1.defaultMappers;
+//const orUndefined = <T>(i: T) => i as T | undefined
 class Server {
     constructor(ctx, isProduction = process.env.NODE_ENV === "production") {
         this.ctx = ctx;
         this.isProduction = isProduction;
-        this.errorRoute = "/error";
+        this.options = {
+            errorRoute: "/error",
+            bundleAnalyzer: {
+                analyzeServer: false,
+                analyzeBrowser: true,
+            },
+        };
         this.jsonErrorHandler = (err, req, res, next) => {
             try {
                 console.error(err);
@@ -118,18 +125,29 @@ class Server {
      */
     getNextjsConfig() {
         const withCSS = require("@zeit/next-css");
-        const ForkTsCheckerWebpackPlugin = require("fork-ts-checker-webpack-plugin");
+        const withSass = require("@zeit/next-sass");
+        const LodashPlugin = require("lodash-webpack-plugin");
         const withTypescript = require("@zeit/next-typescript");
         let that = this;
         const opts = {
             webpack(config, options) {
                 // Do not run type checking twice:
-                if (options.isServer && !that.isProduction)
+                if (options.isServer && !that.isProduction) {
+                    const ForkTsCheckerWebpackPlugin = require("fork-ts-checker-webpack-plugin");
                     config.plugins.push(new ForkTsCheckerWebpackPlugin());
+                }
+                config.plugins.push(new LodashPlugin());
                 return config;
             },
         };
-        return withTypescript(withCSS(opts));
+        let out = this.isProduction
+            ? withTypescript(withCSS(withSass(opts)))
+            : withSass(withTypescript(withCSS(opts)));
+        if (this.ctx.website.bundleAnalyzer) {
+            const withBundleAnalyzer = require("@zeit/next-bundle-analyzer");
+            out = withBundleAnalyzer(Object.assign({}, out, this.options.bundleAnalyzer));
+        }
+        return out;
     }
     /**
      * helpers available on the routeSetup method
@@ -152,9 +170,9 @@ class Server {
                 return __awaiter(this, void 0, void 0, function* () {
                     const router = express.Router();
                     yield fn(router);
-                    if (that.errorRoute) {
+                    if (that.options.errorRoute) {
                         const errorMw = (err, req, res, next) => {
-                            that.getNextApp().render(req, res, that.errorRoute, { message: String(err) });
+                            that.getNextApp().render(req, res, that.options.errorRoute, { message: String(err) });
                         };
                         router.use(errorMw);
                     }

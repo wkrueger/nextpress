@@ -8,7 +8,13 @@ declare class Server {
     ctx: Nextpress.Context;
     isProduction: boolean;
     constructor(ctx: Nextpress.Context, isProduction?: boolean);
-    errorRoute: string;
+    options: {
+        errorRoute: string;
+        bundleAnalyzer: {
+            analyzeServer: boolean;
+            analyzeBrowser: boolean;
+        };
+    };
     private _nextApp?;
     getNextApp(): nextjs.Server;
     /**
