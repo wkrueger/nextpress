@@ -50,7 +50,7 @@ There will be two `tsconfig.json`s around. The one on the root is invoked by nex
 
 On VSCode: F1 > Run build task > Watch at server/tsconfig.json.
 
-Server (compiled) will be available at `./nextpress/<file>.js`. The first time you run it it may complain something and create an `envfile.env` which you should edit.
+Server (compiled) will be available at `./nextpress/<file>.js`. The first time you run it it may complain something and create an `envfile.env` which you should edit. The required variables depend on which `defaultContexts` that are added on `server/index.ts`.
 
 ```
 WEBSITE_ROOT="http://localhost:8080"
@@ -125,6 +125,18 @@ While on the server the website root path can be easily acessed through the cont
 ### Mailgun context
 
 - Ready-to-use `sendMail()` shortcut for the mailgun API. Required is using the `UserAuth` module.
+
+## Default webpack config
+
+Currently includes:
+
+- Typescript (ofcourse)
+- CSS (no modules)
+- Sass (no modules)
+- Lodash plugin (reduce bundle size)
+- Bundle analyzer runs if `WEBSITE_BUNDLE_ANALYZER` is provided
+
+Override it by replacing the corresponding `Server#getNextJsConfig` method.
 
 ## Route setup
 
@@ -218,6 +230,8 @@ server.run()
 
 ## Auth boilerplate
 
+This requires `bcrypt` as peer dependency.
+
 ```ts
 import UserAuth from "nextpress/built/user-auth"
 const userAuth = new UserAuth(ctx, knex)
@@ -271,7 +285,3 @@ OBS: As login is persisted on session, nexts `Router.push` won't work after logg
 TODO
 
 all of the rest
-
-## Big fat caveat
-
-Modules/dependencies currently rely on flat node_modules.
