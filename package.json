@@ -1,6 +1,6 @@
 {
   "name": "@proerd/nextpress",
-  "version": "1.1.13",
+  "version": "1.1.14",
   "main": "built/index.js",
   "typings": "built/index.d.ts",
   "dependencies": {

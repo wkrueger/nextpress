@@ -123,6 +123,10 @@ class Server {
             const sessionMw = this.createSessionMw(store);
             //fixme optional and scoped middleware
             expressApp.use(sessionMw);
+            const robotsPath = path_1.resolve(this.ctx.projectRoot, "static", "robots.txt");
+            expressApp.get("/robots.txt", (_, response) => {
+                response.sendFile(robotsPath);
+            });
             return expressApp;
         });
     }

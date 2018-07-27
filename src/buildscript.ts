@@ -15,6 +15,7 @@ export function buildscript(projectRoot: string) {
       checkNCreate(["pages", "index.tsx"], () => loadScaffoldFile("client-index.txt"))
       checkNCreate(["app", "index.tsx"], () => "")
       checkNCreate(["static", "hello.txt"], () => "Use this folder to host static assets.")
+      checkNCreate(["static", "robots.txt"], () => "")
       checkNCreate([".babelrc.js"], () => loadScaffoldFile("babelrc.txt"))
       checkNCreate(["tsconfig.json"], () => JSON.stringify(clientTsConfig, null, 2))
       checkNCreate([".gitignore"], () => loadScaffoldFile("gitignore.scaff.txt"))
