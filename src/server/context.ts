@@ -2,9 +2,12 @@ import dotenv = require("dotenv")
 import path = require("path")
 import fs = require("fs")
 import mailgunMapper from "./contexts/mailgun"
-import databaseMapper from "./contexts/database"
+import knexMapper from "./contexts/knex"
 import websiteMapper from "./contexts/website"
+import redisMapper from "./contexts/redis"
+//required for typedefs
 import knex = require("knex")
+import redis = require("ioredis")
 
 export type ContextMapper = {
   id: string
@@ -15,31 +18,32 @@ export type ContextMapper = {
 
 export const defaultMappers = {
   mailgun: mailgunMapper,
-  database: databaseMapper,
+  knex: knexMapper,
   website: websiteMapper,
+  redis: redisMapper
 }
 
 type GetMapperContext<T> = T extends { envContext: () => infer R } ? R : never
 type Values<T> = T[keyof T]
-type Intersecion = GetMapperContext<Values<typeof defaultMappers>>
+type Intersection = GetMapperContext<Values<typeof defaultMappers>>
 type GetKeys<U> = U extends Record<infer K, any> ? K : never
 type UnionToIntersection<U extends object> = {
   [K in GetKeys<U>]: U extends Record<K, infer T> ? T : never
 }
-type GenDefaultContext = UnionToIntersection<Intersecion>
+type GenDefaultContext = UnionToIntersection<Intersection>
 
 export default function(i: { projectRoot: string; mappers: ContextMapper[] }) {
   const pluginKeys = (i.mappers || []).reduce(
     (out, item) => {
       return [...out, ...item.envKeys]
     },
-    [] as string[],
+    [] as string[]
   )
   const pluginOptional = (i.mappers || []).reduce(
     (out, item) => {
       return [...out, ...item.optionalKeys]
     },
-    [] as string[],
+    [] as string[]
   )
   const required = pluginKeys.filter(k => pluginOptional.indexOf(k) === -1)
   if (!process.env.NO_ENVFILE) {
@@ -63,10 +67,10 @@ export default function(i: { projectRoot: string; mappers: ContextMapper[] }) {
     (out, item) => {
       return {
         ...out,
-        ...item.envContext(),
+        ...item.envContext()
       }
     },
-    {} as any,
+    {} as any
   )
   return {
     projectRoot: i.projectRoot,
@@ -76,10 +80,12 @@ export default function(i: { projectRoot: string; mappers: ContextMapper[] }) {
       for (let i = 0; i < contextIds.length; i++) {
         const contextId = contextIds[i]
         if (!this.loadedContexts.has(contextId)) {
-          throw Error(`context mapper with id: ${contextId} required but not found.`)
+          throw Error(
+            `context mapper with id: ${contextId} required but not found.`
+          )
         }
       }
-    },
+    }
   } as Nextpress.Context
 }
 

@@ -2,7 +2,6 @@ import nextjs = require("next")
 import polka = require("polka")
 import morgan = require("morgan")
 import expressSession = require("express-session")
-import sessionStoreMod = require("connect-session-knex")
 import rimraf = require("rimraf")
 import { promisify } from "util"
 import { resolve } from "path"
@@ -15,7 +14,7 @@ export type PolkaApp = ReturnType<typeof polka>
 class Server {
   constructor(
     public ctx: Nextpress.Context,
-    public isProduction = process.env.NODE_ENV === "production",
+    public isProduction = process.env.NODE_ENV === "production"
   ) {
     if (!ctx.loadedContexts.has("default.website")) {
       throw Error("Server required the default.website context to be used.")
@@ -26,8 +25,8 @@ class Server {
     errorRoute: "/error",
     bundleAnalyzer: {
       analyzeServer: false,
-      analyzeBrowser: true,
-    },
+      analyzeBrowser: true
+    }
   }
 
   private _nextApp?: nextjs.Server
@@ -36,7 +35,7 @@ class Server {
       this._nextApp = nextjs({
         dev: !this.isProduction,
         dir: this.ctx.projectRoot,
-        conf: this.getNextjsConfig(),
+        conf: this.getNextjsConfig()
       })
     return this._nextApp
   }
@@ -54,7 +53,9 @@ class Server {
     const expressApp = polka()
     await this.setupGlobalMiddleware(expressApp)
     await this.setupRoutes({ app: expressApp })
-    expressApp.listen(this.ctx.website.port, () => console.log(this.ctx.website.port))
+    expressApp.listen(this.ctx.website.port, () =>
+      console.log(this.ctx.website.port)
+    )
   }
 
   /**
@@ -100,7 +101,7 @@ class Server {
         }
         config.plugins.push(new LodashPlugin())
         return config
-      },
+      }
     }
     let out = this.isProduction
       ? withTypescript(withCSS(withSass(opts)))
@@ -113,10 +114,18 @@ class Server {
   }
 
   createSessionStore() {
-    if (this.ctx.database) {
-      const StoreConstructor = sessionStoreMod(expressSession)
+    if (this.ctx.loadedContexts.has("default.redis")) {
+      const redisMod = require("connect-redis")
+      const StoreConstructor = redisMod(expressSession)
       return new StoreConstructor({
-        knex: this.ctx.database.db(),
+        client: this.ctx.redis.instance()
+      })
+    }
+    if (this.ctx.loadedContexts.has("default.database")) {
+      const knexMod = require("connect-session-knex")
+      const StoreConstructor = knexMod(expressSession)
+      return new StoreConstructor({
+        knex: this.ctx.database.db()
       })
     }
   }
@@ -125,11 +134,11 @@ class Server {
     return expressSession({
       secret: this.ctx.website.sessionSecret,
       cookie: {
-        maxAge: 1000 * 60 * 60 * 24 * 7,
+        maxAge: 1000 * 60 * 60 * 24 * 7
       },
       resave: false,
       saveUninitialized: false,
-      store,
+      store
     })
   }
 }

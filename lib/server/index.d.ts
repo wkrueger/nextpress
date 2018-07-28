@@ -30,7 +30,7 @@ declare class Server {
      * the next.config.js
      */
     getNextjsConfig(): any;
-    createSessionStore(): {} | undefined;
+    createSessionStore(): any;
     createSessionMw(store: any): any;
 }
 export { Server, nextjs };

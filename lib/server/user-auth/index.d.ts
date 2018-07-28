@@ -1,7 +1,7 @@
 import Yup = require("yup");
-import knexModule = require("knex");
-import { Server } from "..";
-import { RouterBuilder } from "./router-builder";
+import { Server } from "../..";
+import { RouterBuilder } from "../router-builder";
+import { UserStore } from "./user-stores";
 const createUserSchema: Yup.ObjectSchema<{
     email: string;
     password: string;
@@ -34,11 +34,9 @@ export declare class UserAuth {
         subject: string;
         html: string;
     }) => Promise<any>;
-    _knex: knexModule;
+    userStore: UserStore;
     init(): Promise<void>;
-    userTable(): knexModule.QueryBuilder;
     private checkAndUpdateUserRequestCap;
-    routineCleanup(): Promise<void>;
     create(inp: SchemaType<typeof createUserSchema>, opts?: {
         askForValidation: boolean;
     }): Promise<void>;

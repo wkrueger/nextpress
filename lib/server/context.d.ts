@@ -1,4 +1,5 @@
 import knex = require("knex");
+import redis = require("ioredis");
 export declare type ContextMapper = {
     id: string;
     envKeys: string[];
@@ -23,7 +24,7 @@ export declare const defaultMappers: {
             };
         };
     };
-    database: {
+    knex: {
         id: string;
         envKeys: string[];
         optionalKeys: string[];
@@ -57,17 +58,26 @@ export declare const defaultMappers: {
             };
         };
     };
+    redis: {
+        id: string;
+        optionalKeys: string[];
+        envContext(): {
+            redis: {
+                instance: () => redis.Redis;
+            };
+        };
+    };
 };
 type GetMapperContext<T> = T extends {
     envContext: () => infer R;
 } ? R : never;
 type Values<T> = T[keyof T];
-type Intersecion = GetMapperContext<Values<typeof defaultMappers>>;
+type Intersection = GetMapperContext<Values<typeof defaultMappers>>;
 type GetKeys<U> = U extends Record<infer K, any> ? K : never;
 type UnionToIntersection<U extends object> = {
     [K in GetKeys<U>]: U extends Record<K, infer T> ? T : never;
 };
-type GenDefaultContext = UnionToIntersection<Intersecion>;
+type GenDefaultContext = UnionToIntersection<Intersection>;
 export default function (i: {
     projectRoot: string;
     mappers: ContextMapper[];

@@ -4,7 +4,7 @@ import { Server, ContextFactory, defaultMappers } from "@proerd/nextpress"
 ;(async () => {
   const context = ContextFactory({
     projectRoot: path.resolve(__dirname, ".."),
-    mappers: [defaultMappers.website, defaultMappers.mailgun, defaultMappers.database],
+    mappers: [defaultMappers.website, defaultMappers.mailgun, defaultMappers.knex],
   })
 
   await context.database.init({
