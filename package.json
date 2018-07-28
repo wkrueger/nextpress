@@ -1,8 +1,8 @@
 {
   "name": "@proerd/nextpress",
-  "version": "1.1.14",
-  "main": "built/index.js",
-  "typings": "built/index.d.ts",
+  "version": "1.2.0",
+  "main": "lib/index.js",
+  "typings": "lib/index.d.ts",
   "dependencies": {
     "@proerd/buildscript": "^1.1.1",
     "@types/bcrypt": "^2.0.0",

@@ -158,78 +158,57 @@ server.run()
 
 ```ts
 //default route setup
-async routeSetup(app: ExpressApp, helper: RouteSetupHelper): Promise<void> {
-  app.use(await helper.htmlRoutes())
+async setupRoutes({ app }: { app: ExpressApp }): Promise<void> {
+  const builder = new RouterBuilder(this)
+  app.use(await builder.createHtmlRouter())
 }
 ```
 
-Adding routes must be done inside this. `helper` comes with a couple of predefined templates and useful functions. See signatures while using the editor.
+Adding routes must be done inside this. Use `RouterBuilder` for a couple of predefined templates and useful functions. See signatures while using the editor.
 
-Ex
+- `createHtmlRouter`: create an express router with includes next.js, and etcetera. Next.js is already included on the end of the stack, additional routes you write are added BEFORE the next.js route
+- `createJsonRouter`: express router for json apis, common middleware already included
+- `createJsonRouterFromDict` offers an opinionated approach for setting up routes.
+- static helper methods: `tryMw`, `appendJsonRoutesFromDict`
+- Overrideable `jsonErrorHandler`
 
-- `htmlRoutes` (create an express router with includes next.js, and etcetera. Next.js is already included on the end of the stack, additional routes you write are added BEFORE the next.js route)
-- `jsonRoutes` (express router for json apis, common middleware already included)
-
-The 2 methods above RETURN a router, you still has to write `app.use(router)` to bind it to the main express instance. The helper also contains things like:
-
-```js
-{
-  /** wrap a middleware in a try-catch-next */
-  tryMw,
-  /** declare json routes in a simplified way */
-  jsonRouteDict,
-  /** for use on jsonRouteDict - set another http method, default is POST */
-  withMethod,
-  /** for use on jsonRouteDict - run middleware before */
-  withMiddleware,
-  /** for use on jsonRouteDict - validate with yup before */
-  withValidation,
-  /** yup link for creating validation rules */
-  yup,
-  /** a reference to the next.js app, which has the renderer */
-  nextApp: this.nextApp,
-  /** next.js default middleware */
-  nextMw,  
-}
-```
+The 2 methods above RETURN a router, you still has to write `app.use(router)` to bind it to the main express instance.
 
 Cut-down sample:
 
 ```ts
 const server = new Server(ctx)
-server.routeSetup = async (app, setup) => {
-  const html = await setup.htmlRoutes(async router => {
+server.routeSetup = async app => {
+  const routerBuilder = new RouterBuilder(server)
+  const { tryMw } = RouterBuilder
+  const htmlRouter = await routerBuilder.createHtmlRouter(async ({ router }) => {
     router.get(
       "/",
-      //dont do this.
-      setup.tryMw((req, res) => {
+      //(PS: nextjs is not meant to be used like this)
+      tryMw((req, res) => {
         if (!req.session!.user) {
-          return setup.nextApp.render(req, res, "/unauth")
+          return server.getNextApp().render(req, res, "/unauth")
         }
         return res.redirect("/dashboard")
       }),
     )
     //...
   })
-  app.use(html)
+  app.use(htmlRouter)
 
-  const api = setup.jsonRoutes(async router => {
-    Setup.jsonRouteDict(router, {
-      "/createuser": async req => {
-        await User.create({
-          email: req.body.newUserEmail,
-          password: req.body.newUserPwd,
-        })
-        return { status: "OK" }
-      },
-    })
+  const api = setup.createJsonRouterFromDict(router, helpers => {
+    "/createuser": async req => {
+      await User.create({
+        email: req.body.newUserEmail,
+        password: req.body.newUserPwd,
+      })
+      return { status: "OK" }
+    },
   })
   app.use("/api", api)
 }
 server.run()
 ```
-
-`jsonRouteDict` and the `withX` are candy for declaring JSON routes.
 
 ## Auth boilerplate
 

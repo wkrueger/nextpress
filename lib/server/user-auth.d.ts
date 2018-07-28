@@ -1,7 +1,8 @@
 import Yup = require("yup");
 import knexModule = require("knex");
-import { RequestHandler, RouteSetupHelper } from "..";
+import { RequestHandler, Server } from "..";
 import { Router, Request, Response } from "express";
+import { RouterBuilder } from "./router-builder";
 declare const createUserSchema: Yup.ObjectSchema<{
     email: string;
     password: string;
@@ -67,11 +68,11 @@ export declare class UserAuth {
         login: number;
         requestPasswordReset: number;
     };
-    userRoutes(Setup: RouteSetupHelper): Promise<{
+    userRoutes(routerBuilder: RouterBuilder): Promise<{
         json: Router;
-        html: Router;
+        html: import("express-serve-static-core").Router;
     }>;
-    _renderSimpleMessage(Setup: RouteSetupHelper, req: any, res: any, title: string, message: string): Promise<void>;
+    _renderSimpleMessage(server: Server, req: any, res: any, title: string, message: string): Promise<void>;
     _validationMailHTML(i: {
         address: string;
         validationLink: string;

@@ -2,9 +2,10 @@ import Yup = require("yup")
 import knexModule = require("knex")
 import { v4 as uuid } from "uuid"
 import ono = require("ono")
-import { RequestHandler, RouteSetupHelper } from ".."
+import { RequestHandler, Server } from ".."
 import { Router, Request, Response } from "express"
 import day = require("dayjs")
+import { RouterBuilder } from "./router-builder"
 
 const createUserSchema = Yup.object({
   email: Yup.string()
@@ -265,13 +266,12 @@ export class UserAuth {
     }
   }
 
-  async userRoutes(Setup: RouteSetupHelper) {
+  async userRoutes(routerBuilder: RouterBuilder) {
     const User = this
-    const { yup, withValidation } = Setup
     const queues = this._getRequestThrottleMws()
-    const json = await Setup.jsonRoutes(async router => {
-      Setup.jsonRouteDict(router, {
-        "/createuser": Setup.withMiddleware(
+    const json = await routerBuilder.createJsonRouterFromDict(
+      ({ withMiddleware, withMethod, withValidation, yup }) => ({
+        "/createuser": withMiddleware(
           [queues.createUser],
           withValidation(
             {
@@ -290,7 +290,7 @@ export class UserAuth {
           ),
         ),
 
-        "/login": Setup.withMiddleware(
+        "/login": withMiddleware(
           [queues.login],
           withValidation(
             {
@@ -317,7 +317,7 @@ export class UserAuth {
           ),
         ),
 
-        "/request-password-reset": Setup.withMiddleware(
+        "/request-password-reset": withMiddleware(
           [queues.requestReset],
           withValidation({ body: yup.object({ email: yup.string().email() }) }, async req => {
             await this.checkAndUpdateUserRequestCap(
@@ -329,7 +329,7 @@ export class UserAuth {
           }),
         ),
 
-        "/perform-password-reset": Setup.withMiddleware(
+        "/perform-password-reset": withMiddleware(
           [queues.performReset],
           withValidation(
             {
@@ -346,26 +346,32 @@ export class UserAuth {
           ),
         ),
 
-        "/logout": Setup.withMethod(
+        "/logout": withMethod(
           "all",
-          Setup.withMiddleware([User.throwOnUnauthMw], async req => {
+          withMiddleware([User.throwOnUnauthMw], async req => {
             await new Promise(res => {
               req.session!.destroy(res)
             })
             return { status: "OK" }
           }),
         ),
-      })
-    })
+      }),
+    )
 
-    const html = await Setup.htmlRoutes(async router => {
+    const html = await routerBuilder.createHtmlRouter(async ({ router }) => {
       router.get(
         this._validateRoute(),
-        Setup.tryMw(async (req, res) => {
+        RouterBuilder.tryMw(async (req, res) => {
           const hash = req.query.seq
           let user = await User.validate(hash)
           req.session!.user = { id: user.id, email: user.email }
-          return this._renderSimpleMessage(Setup, req, res, "Success", "User validated.")
+          return this._renderSimpleMessage(
+            routerBuilder.server,
+            req,
+            res,
+            "Success",
+            "User validated.",
+          )
         }),
       )
     })
@@ -373,14 +379,8 @@ export class UserAuth {
     return { json, html }
   }
 
-  _renderSimpleMessage(
-    Setup: RouteSetupHelper,
-    req: any,
-    res: any,
-    title: string,
-    message: string,
-  ) {
-    return Setup.nextApp().render(req, res, "/auth/message", {
+  _renderSimpleMessage(server: Server, req: any, res: any, title: string, message: string) {
+    return server.getNextApp().render(req, res, "/auth/message", {
       title: title,
       content: message,
     })
