@@ -1,19 +1,18 @@
 import Yup = require("yup");
 import knexModule = require("knex");
-import { RequestHandler, Server } from "..";
-import { Router, Request, Response } from "express";
+import { Server } from "..";
 import { RouterBuilder } from "./router-builder";
-declare const createUserSchema: Yup.ObjectSchema<{
+const createUserSchema: Yup.ObjectSchema<{
     email: string;
     password: string;
 }>;
-declare const emailSchema: Yup.ObjectSchema<{
+const emailSchema: Yup.ObjectSchema<{
     email: string;
 }>;
-declare const requestIdSchema: Yup.ObjectSchema<{
+const requestIdSchema: Yup.ObjectSchema<{
     requestId: string;
 }>;
-declare const pwdRequestSchema: Yup.ObjectSchema<{
+const pwdRequestSchema: Yup.ObjectSchema<{
     pwd1: string;
     pwd2: string;
     requestId: string;
@@ -24,7 +23,7 @@ export interface User {
     auth?: string;
     validationHash?: string;
 }
-declare type SchemaType<T> = T extends Yup.ObjectSchema<infer Y> ? Y : never;
+type SchemaType<T> = T extends Yup.ObjectSchema<infer Y> ? Y : never;
 export declare class UserAuth {
     ctx: Nextpress.Context;
     constructor(ctx: Nextpress.Context);
@@ -48,17 +47,17 @@ export declare class UserAuth {
     createResetPwdRequest(inp: SchemaType<typeof emailSchema>): Promise<void>;
     findResetPwdRequest(inp: SchemaType<typeof requestIdSchema>): Promise<boolean>;
     performResetPwd(inp: SchemaType<typeof pwdRequestSchema>): Promise<void>;
-    checkSession: (req: Request, res: Response) => void;
-    throwOnUnauthMw: RequestHandler;
+    checkSession: Polka.Middleware;
+    throwOnUnauthMw: Polka.Middleware;
     /**
      * overrideable (default is 10 reqs / 10 secs per route)
      * this counts all the requests this server receives
      */
     _getRequestThrottleMws(): {
-        createUser: RequestHandler;
-        login: RequestHandler;
-        requestReset: RequestHandler;
-        performReset: RequestHandler;
+        createUser: Polka.Middleware;
+        login: Polka.Middleware;
+        requestReset: Polka.Middleware;
+        performReset: Polka.Middleware;
     };
     /**
      * overrideable
@@ -69,8 +68,8 @@ export declare class UserAuth {
         requestPasswordReset: number;
     };
     userRoutes(routerBuilder: RouterBuilder): Promise<{
-        json: Router;
-        html: import("express-serve-static-core").Router;
+        json: Polka.Router;
+        html: Polka.Router;
     }>;
     _renderSimpleMessage(server: Server, req: any, res: any, title: string, message: string): Promise<void>;
     _validationMailHTML(i: {
@@ -95,5 +94,15 @@ export declare class UserAuth {
     }): string;
     _pwdResetEmailSubject(): string;
     _newAccountEmailSubject(): string;
+}
+declare global {
+    namespace Polka {
+        interface Session {
+            user?: {
+                id: number;
+                email: string;
+            };
+        }
+    }
 }
 export {};

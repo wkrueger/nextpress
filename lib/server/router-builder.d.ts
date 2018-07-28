@@ -1,40 +1,43 @@
 import { Server } from ".";
-import express = require("express");
 import yup = require("yup");
 export declare class RouterBuilder {
     server: Server;
     constructor(server: Server);
     static yup: typeof yup;
-    static express: typeof express;
-    static tryMw: (fn: (req: express.Request, res: express.Response) => void | Promise<void>) => (req: express.Request, res: express.Response, next: express.NextFunction) => Promise<void>;
-    static appendJsonRoutesFromDict<Dict extends Record<string, RouteDictItem>>(router: express.Router, setup: (i: typeof RouteDictSetters) => Dict): void;
+    static polka: {
+        (): Polka.App;
+        Router(): Polka.Router;
+        json(): Polka.Middleware;
+    };
+    static tryMw: (fn: Polka.Middleware) => Polka.Middleware;
+    static appendJsonRoutesFromDict<Dict extends Record<string, RouteDictItem>>(router: Polka.Router, setup: (i: typeof RouteDictSetters) => Dict): void;
     private _nextHandle;
-    nextMw: (req: express.Request, res: express.Response, next: express.NextFunction) => Promise<void>;
+    nextMw: Polka.Middleware;
     /**
      * creates a router suited for next.js html/react routes;
      * we add the common middleware, you set up the routes on the callback;
      * next.js middleware is always added in the end of the stack.
      */
     createHtmlRouter(callback?: ({ router }: {
-        router: express.Router;
-    }) => Promise<void>): Promise<import("express-serve-static-core").Router>;
+        router: Polka.Router;
+    }) => Promise<void>): Promise<Polka.Router>;
     /**
      * creates a router suited for JSON API routes;
      * we add the common middleware, you set up the routes on the callback;
      */
     createJsonRouter(callback: ({ router }: {
-        router: express.Router;
-    }) => Promise<void>): Promise<express.Router>;
-    createJsonRouterFromDict<Dict extends Record<string, RouteDictItem>>(setup: (i: typeof RouteDictSetters) => Dict): Promise<express.Router>;
-    jsonErrorHandler: express.ErrorRequestHandler;
+        router: Polka.Router;
+    }) => Promise<void>): Promise<Polka.Router>;
+    createJsonRouterFromDict<Dict extends Record<string, RouteDictItem>>(setup: (i: typeof RouteDictSetters) => Dict): Promise<Polka.Router>;
+    jsonErrorHandler: Polka.ErrorMiddleware;
 }
 export declare type Omit<T, K> = Pick<T, Exclude<keyof T, K>>;
 export interface RouteDictItem<Replace = {}> {
-    (req: Omit<express.Request, keyof Replace> & Replace): Promise<{
+    (req: Omit<Polka.Request, keyof Replace> & Replace): Promise<{
         [r: string]: any;
     }>;
     method?: string;
-    middleware?: express.RequestHandler[];
+    middleware?: Polka.Middleware[];
 }
 declare const RouteDictSetters: {
     yup: typeof yup;
@@ -45,7 +48,7 @@ declare const RouteDictSetters: {
     /**
      * (for a given route item) Adds middleware to be run before
      */
-    withMiddleware(mw: express.RequestHandler[], item: RouteDictItem<{}>): RouteDictItem<{}>;
+    withMiddleware(mw: Polka.Middleware[], item: RouteDictItem<{}>): RouteDictItem<{}>;
     /**
      * (for a given route item) Validates query and/or params with the provided rules.
      */

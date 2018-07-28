@@ -2,8 +2,7 @@ import Yup = require("yup")
 import knexModule = require("knex")
 import { v4 as uuid } from "uuid"
 import ono = require("ono")
-import { RequestHandler, Server } from ".."
-import { Router, Request, Response } from "express"
+import { Server } from ".."
 import day = require("dayjs")
 import { RouterBuilder } from "./router-builder"
 
@@ -226,16 +225,16 @@ export class UserAuth {
       .where({ resetPwdHash: inp.requestId })
   }
 
-  checkSession = (req: Request, res: Response) => {
+  checkSession: Polka.Middleware = req => {
     if (!req.session) throw ono({ statusCode: 401 }, "Unauthorized")
     if (!req.session.user) throw ono({ statusCode: 401 }, "Unauthorized")
     //res.setHeader("X-User-Id", req.session.user.id)
     //res.setHeader("X-User-Email", req.session.user.email)
   }
 
-  throwOnUnauthMw: RequestHandler = (req, res, next) => {
+  throwOnUnauthMw: Polka.Middleware = (req, res, next) => {
     try {
-      this.checkSession(req, res)
+      this.checkSession(req, res, next)
       next()
     } catch (err) {
       next(err)
@@ -450,7 +449,10 @@ class TimedQueue {
   }
 }
 
-let timedQueueMw: (size?: number, wait?: number) => RequestHandler = (size = 10, wait = 10000) => {
+let timedQueueMw: (size?: number, wait?: number) => Polka.Middleware = (
+  size = 10,
+  wait = 10000,
+) => {
   let queue = new TimedQueue(size, wait)
   return (req, res, next) => {
     try {
@@ -460,5 +462,13 @@ let timedQueueMw: (size?: number, wait?: number) => RequestHandler = (size = 10,
       return
     }
     next()
+  }
+}
+
+declare global {
+  namespace Polka {
+    interface Session {
+      user?: { id: number; email: string }
+    }
   }
 }

@@ -6,20 +6,20 @@ Trying not to worry much about config options, it is of intention to have one bi
 
 Currently bundling:
 
-- express
+- ~~express~~ polka
 - next.js as a view layer
 - a default configs setup with `dotenv`
 - some scaffolding (I'd like less but huh)
 - knex
 - an auth workflow
-- front-end reacty common things (react, react-dom, redux, redutser, formik...)
+- front-end reacty common things (react, react-dom, redux, formik...)
   - moved to `nextpress-client` package
 - all with typescript in mind
 
 Limitations (FIXMEs)
 
 - Design for a coupled "monolithic" small server (API and website in the same project, not necessarily in the same script)
-- The wesite part uses session for auth, which in is directly coupled to the database
+- The website part implicitly uses session for auth
 
 ## scaffolding
 
@@ -184,7 +184,6 @@ server.routeSetup = async app => {
   const htmlRouter = await routerBuilder.createHtmlRouter(async ({ router }) => {
     router.get(
       "/",
-      //(PS: nextjs is not meant to be used like this)
       tryMw((req, res) => {
         if (!req.session!.user) {
           return server.getNextApp().render(req, res, "/unauth")

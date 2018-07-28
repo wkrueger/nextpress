@@ -1,15 +1,16 @@
 import nextjs = require("next")
-import express = require("express")
+import polka = require("polka")
 import morgan = require("morgan")
 import expressSession = require("express-session")
-import mysqlSession = require("express-mysql-session")
+import sessionStoreMod = require("connect-session-knex")
 import rimraf = require("rimraf")
 import { promisify } from "util"
 import { resolve } from "path"
 import { RouterBuilder } from "./router-builder"
 export { default as ContextFactory, defaultMappers } from "./context"
+import helmet = require("helmet")
 
-export type ExpressApp = ReturnType<typeof express>
+export type PolkaApp = ReturnType<typeof polka>
 
 class Server {
   constructor(
@@ -50,7 +51,7 @@ class Server {
       await promisify(rimraf)(resolve(this.ctx.projectRoot, ".next"))
       await nextBuild(this.ctx.projectRoot, this.getNextjsConfig())
     }
-    const expressApp = express()
+    const expressApp = polka()
     await this.setupGlobalMiddleware(expressApp)
     await this.setupRoutes({ app: expressApp })
     expressApp.listen(this.ctx.website.port, () => console.log(this.ctx.website.port))
@@ -59,24 +60,24 @@ class Server {
   /**
    * this is meant to be overriden in order to set the server routes.
    */
-  async setupRoutes({ app }: { app: ExpressApp }): Promise<void> {
+  async setupRoutes({ app }: { app: PolkaApp }): Promise<void> {
     const builder = new RouterBuilder(this)
     app.use(await builder.createHtmlRouter())
   }
 
-  async setupGlobalMiddleware(expressApp: express.Application) {
+  async setupGlobalMiddleware(expressApp: Polka.App) {
     await this.getNextApp().prepare()
     if (this.ctx.website.logRequests) {
       expressApp.use(morgan("short"))
     }
     const store = this.createSessionStore()
     const sessionMw = this.createSessionMw(store)
-    //fixme optional and scoped middleware
     expressApp.use(sessionMw)
     const robotsPath = resolve(this.ctx.projectRoot, "static", "robots.txt")
-    expressApp.get("/robots.txt", (_, response) => {
+    expressApp.get<Polka.Middleware>("/robots.txt", (_, response) => {
       response.sendFile(robotsPath)
     })
+    expressApp.use(helmet())
     return expressApp
   }
 
@@ -113,11 +114,9 @@ class Server {
 
   createSessionStore() {
     if (this.ctx.database) {
-      const StoreConstructor = (mysqlSession as any)(expressSession)
+      const StoreConstructor = sessionStoreMod(expressSession)
       return new StoreConstructor({
-        user: this.ctx.database.user,
-        password: this.ctx.database.password,
-        database: this.ctx.database.name,
+        knex: this.ctx.database.db(),
       })
     }
   }

@@ -1,6 +1,6 @@
 import { Server } from "."
-import express = require("express")
 import { parse as urlparse } from "url"
+import polkaMod = require("polka")
 import ono = require("ono")
 import yup = require("yup")
 
@@ -8,20 +8,22 @@ export class RouterBuilder {
   constructor(public server: Server) {}
 
   static yup = yup
-  static express = express
+  static polka = polkaMod
 
-  static tryMw = (
-    fn: (req: express.Request, res: express.Response) => void | Promise<void>,
-  ) => async (req: express.Request, res: express.Response, next: express.NextFunction) => {
+  static tryMw = (fn: Polka.Middleware): Polka.Middleware => async (
+    req: Polka.Request,
+    res: Polka.Response,
+    next: Polka.NextFunction,
+  ) => {
     try {
-      await fn(req, res)
+      await fn(req, res, next)
     } catch (err) {
       next(err)
     }
   }
 
   static appendJsonRoutesFromDict<Dict extends Record<string, RouteDictItem>>(
-    router: express.Router,
+    router: Polka.Router,
     setup: (i: typeof RouteDictSetters) => Dict,
   ) {
     const routeDict = setup(RouteDictSetters)
@@ -29,21 +31,18 @@ export class RouterBuilder {
       let item = routeDict[key]
       let method: "get" | "post" | "put" | "delete" = item.method || ("post" as any)
       let mw = item.middleware || []
-      router[method](
-        key,
-        ...mw,
-        RouterBuilder.tryMw(async (req, res) => {
-          let result = await item(req)
-          res.send(result)
-        }),
-      )
+      let fn: Polka.Middleware = async (req, res) => {
+        let result = await item(req)
+        res.send(result)
+      }
+      router[method](key, ...mw, RouterBuilder.tryMw(fn) as any)
     })
   }
 
   private _nextHandle = this.server.getNextApp().getRequestHandler()
 
   nextMw = RouterBuilder.tryMw((req, res) => {
-    const parsedUrl = urlparse(req.url, true)
+    const parsedUrl = urlparse(req.url!, true)
     this._nextHandle(req, res, parsedUrl)
   })
 
@@ -52,13 +51,13 @@ export class RouterBuilder {
    * we add the common middleware, you set up the routes on the callback;
    * next.js middleware is always added in the end of the stack.
    */
-  async createHtmlRouter(callback?: ({ router }: { router: express.Router }) => Promise<void>) {
-    const router = express.Router()
+  async createHtmlRouter(callback?: ({ router }: { router: Polka.Router }) => Promise<void>) {
+    const router = polkaMod.Router()
     if (callback) {
       await callback({ router })
     }
     if (this.server.options.errorRoute) {
-      const errorMw: express.ErrorRequestHandler = (err, req, res, next) => {
+      const errorMw: Polka.ErrorMiddleware = (err, req, res, next) => {
         this.server
           .getNextApp()
           .render(req, res, this.server.options.errorRoute, { message: String(err) })
@@ -73,11 +72,11 @@ export class RouterBuilder {
    * creates a router suited for JSON API routes;
    * we add the common middleware, you set up the routes on the callback;
    */
-  async createJsonRouter(callback: ({ router }: { router: express.Router }) => Promise<void>) {
-    const router = express.Router() as express.Router
-    router.use(express.json())
+  async createJsonRouter(callback: ({ router }: { router: Polka.Router }) => Promise<void>) {
+    const router = polkaMod.Router()
+    router.use(polkaMod.json())
     await callback({ router })
-    router.use(function apiNotFound(req, res, next) {
+    router.use<Polka.Middleware>(function apiNotFound(req, res, next) {
       next(ono({ statusCode: 404 }, "Path not found (404)."))
     })
     router.use(this.jsonErrorHandler)
@@ -92,7 +91,7 @@ export class RouterBuilder {
     })
   }
 
-  jsonErrorHandler: express.ErrorRequestHandler = (err, req, res, next) => {
+  jsonErrorHandler: Polka.ErrorMiddleware = (err, req, res, next) => {
     try {
       console.error(err)
       if (err.sql && !err.statusCode) {
@@ -113,9 +112,9 @@ export class RouterBuilder {
 
 export type Omit<T, K> = Pick<T, Exclude<keyof T, K>>
 export interface RouteDictItem<Replace = {}> {
-  (req: Omit<express.Request, keyof Replace> & Replace): Promise<{ [r: string]: any }>
+  (req: Omit<Polka.Request, keyof Replace> & Replace): Promise<{ [r: string]: any }>
   method?: string
-  middleware?: express.RequestHandler[]
+  middleware?: Polka.Middleware[]
 }
 
 const RouteDictSetters = {
@@ -132,7 +131,7 @@ const RouteDictSetters = {
   /**
    * (for a given route item) Adds middleware to be run before
    */
-  withMiddleware(mw: express.RequestHandler[], item: RouteDictItem): RouteDictItem {
+  withMiddleware(mw: Polka.Middleware[], item: RouteDictItem): RouteDictItem {
     item.middleware = mw
     return item
   },
@@ -144,7 +143,7 @@ const RouteDictSetters = {
     what: What,
     item: RouteDictItem<UnwrapSchemaDict<What>>,
   ): RouteDictItem {
-    let fn: any = (req: express.Request) => {
+    let fn: any = (req: Polka.Request) => {
       if (what.query) req.query = what.query.validateSync(req.query)
       if (what.params) req.params = what.params.validateSync(req.params)
       if (what.body) req.body = what.body.validateSync(req.body)
