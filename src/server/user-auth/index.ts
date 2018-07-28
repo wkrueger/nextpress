@@ -55,8 +55,6 @@ export class UserAuth {
     ctx.requireContext("default.mailgun", "default.website")
     if (this.ctx.loadedContexts.has("default.knex")) {
       this.userStore = new KnexStore(ctx.database.db())
-    } else {
-      throw Error("No compatible loaded store for UserAuth.")
     }
   }
 
@@ -71,6 +69,12 @@ export class UserAuth {
   userStore!: UserStore
 
   async init() {
+    if (!this.userStore) {
+      throw Error(
+        "UserAuth: No store found. Either setup the supported" +
+          "contexts (knex) or provide your own userStore implementation."
+      )
+    }
     await this.userStore.initStore()
     await this.userStore.routineCleanup()
   }

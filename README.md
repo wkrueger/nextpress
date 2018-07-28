@@ -80,7 +80,7 @@ const context = ContextFactory({
   mappers: [
     defaultMappers.website,
     defaultMappers.mailgun,
-    defaultMappers.database,
+    defaultMappers.knex,
     {
       id: "auction_scan",
       envKeys: ["BNET_API_KEY", "RUN_SERVICE"],
@@ -98,7 +98,9 @@ const context = ContextFactory({
 
 Reads from the envfile and populates a settings object which is meant to be used throughout the project.
 
-A "context mapper" describes the mapping from the `env` keys to the resulting object. A couple of default `defaultMappers` are provided.
+A "context mapper" describes the mapping from the `env` keys to the resulting object. A couple of default `defaultMappers` are provided. Select which you need to use for the project.
+
+The _website_ and _UserAuth_ modules require some of the default contexts to be defined. Moreover on their section.
 
 The context type is globally defined in `Nextpress.Context`, and shall be declaration-merged through `Nextpress.CustomContext` when necessary.
 
@@ -116,14 +118,15 @@ declare global {
 
 While on the server the website root path can be easily acessed through the context, on the client `process.env.WEBSITE_ROOT` is used (it is replaced on the build stage -- see the `.babelrc` for details).
 
-### Database context
+### Knex context
 
 - `ctx.database.db()` gets a knex instance;
 - optional `ctx.database.init({ currentVersion, migration })` contains a helper regarding table creation and migrations.
+- You still have to install the database driver (default is `mysql`)
 
 ### Mailgun context
 
-- Ready-to-use `sendMail()` shortcut for the mailgun API. Required is using the `UserAuth` module.
+### Redis context
 
 ## Default webpack config
 
@@ -141,7 +144,7 @@ Override it by replacing the corresponding `Server#getNextJsConfig` method.
 
 If starting with `NODE_ENV = production`, the server runs the equivalent of `next build`, then `next start`.
 
-## Route setup
+## Server
 
 The scaffold comes with something like:
 
@@ -152,7 +155,11 @@ const server = new Server(context)
 server.run()
 ```
 
-`Server` expects its context to have the `website` default mapper. It already bundles session middleware, and if the `database` default mapper is present, uses it.
+`Server` expects its context to have the `website` default mapper. It already bundles session middleware, looking for the following contexts to use as stores:
+
+- Redis
+- Knex
+- Fallbacks to dev-mode in-memory session
 
 `server` has an OOPish interceptor pattern, you may set it up by overriding its available methods.
 
@@ -164,7 +171,7 @@ async setupRoutes({ app }: { app: ExpressApp }): Promise<void> {
 }
 ```
 
-Adding routes must be done inside this. Use `RouterBuilder` for a couple of predefined templates and useful functions. See signatures while using the editor.
+Adding routes must be done inside `setupRoutes`. Use `RouterBuilder` for a couple of predefined templates. See signatures while using the editor.
 
 - `createHtmlRouter`: create an express router with includes next.js, and etcetera. Next.js is already included on the end of the stack, additional routes you write are added BEFORE the next.js route
 - `createJsonRouter`: express router for json apis, common middleware already included
@@ -172,7 +179,7 @@ Adding routes must be done inside this. Use `RouterBuilder` for a couple of pred
 - static helper methods: `tryMw`, `appendJsonRoutesFromDict`
 - Overrideable `jsonErrorHandler`
 
-The 2 methods above RETURN a router, you still has to write `app.use(router)` to bind it to the main express instance.
+The the `createRouter` methids RETURN a router, you still has to write `app.use(router)` to bind it to the main express instance.
 
 Cut-down sample:
 
@@ -211,11 +218,11 @@ server.run()
 
 ## Auth boilerplate
 
-This requires `bcrypt` as peer dependency.
+You need to install the `bcrypt` peer dependency in order to use this. Also, this initially looks for `knex` for storing the user data. If the knex context is not present, you'd need to suppy another implementation in `.userStore`.
 
 ```ts
 import UserAuth from "nextpress/built/user-auth"
-const userAuth = new UserAuth(ctx, knex)
+const userAuth = new UserAuth(ctx)
 await userAuth.init()
 ```
 
