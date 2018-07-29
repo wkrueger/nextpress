@@ -16,12 +16,14 @@ export type ContextMapper = {
   envContext: () => any
 }
 
-export const defaultMappers = {
+const validateType = <Type>() => <R extends Type>(i: R) => i
+
+export const defaultMappers = validateType<Record<string, ContextMapper>>()({
   mailgun: mailgunMapper,
   knex: knexMapper,
   website: websiteMapper,
   redis: redisMapper
-}
+})
 
 type GetMapperContext<T> = T extends { envContext: () => infer R } ? R : never
 type Values<T> = T[keyof T]

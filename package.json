@@ -8,6 +8,7 @@
     "@types/bcrypt": "^2.0.0",
     "@types/dotenv": "^4.0.3",
     "@types/ioredis": "^3.2.13",
+    "@types/jest": "^23.3.1",
     "@types/knex": "*",
     "@types/next": "*",
     "@types/request": "*",
@@ -27,6 +28,7 @@
     "express-session": "^1.15.6",
     "fork-ts-checker-webpack-plugin": "^0.4.1",
     "helmet": "^3.13.0",
+    "jest": "^23.4.2",
     "knex": "^0.14.6",
     "lodash-webpack-plugin": "^0.11.5",
     "minimist": "^1.2.0",
@@ -37,6 +39,7 @@
     "polka": "^0.4.0",
     "request": "^2.87.0",
     "rimraf": "^2.6.2",
+    "ts-jest": "^23.0.1",
     "uuid": "^3.2.1",
     "yup": "^0.25.1"
   },

@@ -10,24 +10,48 @@ export function buildscript(projectRoot: string) {
 
   const tasks = {
     scaffold() {
-      checkNCreate(["server", "tsconfig.json"], () => JSON.stringify(serverTsconfig, null, 2))
-      checkNCreate(["server", "index.ts"], () => loadScaffoldFile("server-index.txt"))
-      checkNCreate(["pages", "index.tsx"], () => loadScaffoldFile("client-index.txt"))
+      checkNCreate(["server", "tsconfig.json"], () =>
+        JSON.stringify(serverTsconfig, null, 2)
+      )
+      checkNCreate(["server", "index.ts"], () =>
+        loadScaffoldFile("server-index.txt")
+      )
+      checkNCreate(["pages", "index.tsx"], () =>
+        loadScaffoldFile("client-index.txt")
+      )
       checkNCreate(["app", "index.tsx"], () => "")
-      checkNCreate(["static", "hello.txt"], () => "Use this folder to host static assets.")
+      checkNCreate(
+        ["static", "hello.txt"],
+        () => "Use this folder to host static assets."
+      )
       checkNCreate(["static", "robots.txt"], () => "")
       checkNCreate([".babelrc.js"], () => loadScaffoldFile("babelrc.txt"))
-      checkNCreate(["tsconfig.json"], () => JSON.stringify(clientTsConfig, null, 2))
-      checkNCreate([".gitignore"], () => loadScaffoldFile("gitignore.scaff.txt"))
-      checkNCreate(["pages", "client-global.d.ts"], () =>
-        loadScaffoldFile("client-global-types.txt"),
+      checkNCreate(["tsconfig.json"], () =>
+        JSON.stringify(clientTsConfig, null, 2)
       )
-      checkNCreate([".vscode", "launch.json"], () => loadScaffoldFile("vscode-launch.txt"))
+      checkNCreate([".gitignore"], () =>
+        loadScaffoldFile("gitignore.scaff.txt")
+      )
+      checkNCreate(["pages", "client-global.d.ts"], () =>
+        loadScaffoldFile("client-global-types.txt")
+      )
+      checkNCreate([".vscode", "launch.json"], () =>
+        loadScaffoldFile("vscode-launch.txt")
+      )
+      checkNCreate(["jest.server.config.js"], () =>
+        loadScaffoldFile("jest-config.txt")
+      )
+      const pjspath = resolve(projectRoot, "package.json")
+      const packagejson = require(pjspath)
+      packagejson.scripts = packagejson.scripts || {}
+      packagejson.scripts.testServer =
+        packagejson.scripts.testServer || 'jest -c="jest-server.config.js"'
+      fs.writeFileSync(pjspath, JSON.stringify(packagejson, null, 2))
     },
 
     async compileServer() {
       await build.spawn(`${tsPath} -p ${relativeTo(serverTsConfigPath)} -w`)
-    },
+    }
   }
 
   return {
@@ -35,7 +59,7 @@ export function buildscript(projectRoot: string) {
       build.runTask(tasks)
     },
     tool: build,
-    tasks,
+    tasks
   }
 
   function checkNCreate(paths: string[], content: () => string | Buffer) {
@@ -62,7 +86,9 @@ export function buildscript(projectRoot: string) {
   }
 
   function loadScaffoldFile(pathInsideScaffoldFolder: string) {
-    return fs.readFileSync(resolve(libroot, "src", "scaffolds", pathInsideScaffoldFolder))
+    return fs.readFileSync(
+      resolve(libroot, "src", "scaffolds", pathInsideScaffoldFolder)
+    )
   }
 }
 
@@ -76,8 +102,8 @@ const serverTsconfig = {
     strict: true,
     noUnusedLocals: true,
     sourceMap: true,
-    pretty: false,
-  },
+    pretty: false
+  }
 }
 
 const clientTsConfig = {
@@ -93,7 +119,7 @@ const clientTsConfig = {
     sourceMap: false,
     esModuleInterop: true,
     experimentalDecorators: true,
-    downlevelIteration: true,
+    downlevelIteration: true
   },
-  include: ["pages", "app"],
+  include: ["pages", "app"]
 }

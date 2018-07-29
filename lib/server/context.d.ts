@@ -60,6 +60,7 @@ export declare const defaultMappers: {
     };
     redis: {
         id: string;
+        envKeys: never[];
         optionalKeys: string[];
         envContext(): {
             redis: {

@@ -2,6 +2,7 @@ import Redis = require("ioredis")
 
 export default {
   id: "default.redis",
+  envKeys: [],
   optionalKeys: ["REDIS_URL"],
   envContext() {
     let _instance: InstanceType<typeof Redis> | undefined
