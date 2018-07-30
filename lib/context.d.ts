@@ -69,20 +69,20 @@ export declare const defaultMappers: {
         };
     };
 };
-type GetMapperContext<T> = T extends {
-    envContext: () => infer R;
-} ? R : never;
-type Values<T> = T[keyof T];
-type Intersection = GetMapperContext<Values<typeof defaultMappers>>;
-type GetKeys<U> = U extends Record<infer K, any> ? K : never;
-type UnionToIntersection<U extends object> = {
-    [K in GetKeys<U>]: U extends Record<K, infer T> ? T : never;
-};
-type GenDefaultContext = UnionToIntersection<Intersection>;
 export default function (i: {
     projectRoot: string;
     mappers: ContextMapper[];
 }): Nextpress.Context;
+type GetMapperContext<T> = T extends {
+    envContext: () => infer R;
+} ? R : never;
+type Values<T> = T[keyof T];
+type Union = GetMapperContext<Values<typeof defaultMappers>>;
+type GetKeys<U> = U extends Record<infer K, any> ? K : never;
+type UnionToIntersection<U extends object> = {
+    [K in GetKeys<U>]: U extends Record<K, infer T> ? T : never;
+};
+type GenDefaultContext = UnionToIntersection<Union>;
 declare global {
     namespace Nextpress {
         interface DefaultContext extends GenDefaultContext {

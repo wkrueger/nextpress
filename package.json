@@ -1,6 +1,6 @@
 {
   "name": "@proerd/nextpress",
-  "version": "1.2.0",
+  "version": "1.2.2",
   "main": "lib/index.js",
   "typings": "lib/index.d.ts",
   "dependencies": {
@@ -20,7 +20,6 @@
     "@zeit/next-typescript": "^1.1.0",
     "babel-plugin-lodash": "^3.3.4",
     "babel-plugin-transform-define": "^1.3.0",
-    "compose-middleware": "^5.0.0",
     "connect-redis": "^3.3.3",
     "connect-session-knex": "^1.4.0",
     "dayjs": "^1.6.10",
@@ -56,6 +55,6 @@
     "ioredis": "^3.2.2"
   },
   "bin": {
-    "nextpress": "./built/cli.js"
+    "nextpress": "./lib/cli.js"
   }
 }

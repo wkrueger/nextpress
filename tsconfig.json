@@ -6,7 +6,8 @@
     "declaration": true,
     "sourceMap": true,
     "strict": true,
-    "jsx": "react"
+    "jsx": "react",
+    "pretty": false
   },
-  "include": ["src"]
+  "include": ["src", "types"]
 }

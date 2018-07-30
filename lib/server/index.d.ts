@@ -1,6 +1,7 @@
-import nextjs = require("next");
+/// <reference path="../../types/global.types.d.ts" />
 import polka = require("polka");
-export { default as ContextFactory, defaultMappers } from "./context";
+import { Server as NextServer } from "next";
+export { ContextFactory } from "../context";
 export declare type PolkaApp = ReturnType<typeof polka>;
 declare class Server {
     ctx: Nextpress.Context;
@@ -14,7 +15,7 @@ declare class Server {
         };
     };
     private _nextApp?;
-    getNextApp(): nextjs.Server;
+    getNextApp(): NextServer;
     /**
      * all set, run
      */
@@ -33,4 +34,4 @@ declare class Server {
     createSessionStore(): any;
     createSessionMw(store: any): any;
 }
-export { Server, nextjs };
+export { Server };

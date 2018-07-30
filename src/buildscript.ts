@@ -41,11 +41,14 @@ export function buildscript(projectRoot: string) {
       checkNCreate(["jest.server.config.js"], () =>
         loadScaffoldFile("jest-config.txt")
       )
+      checkNCreate(["server", "__tests__", "sample.ts"], () => "")
+      checkNCreate(["server", "server-global-types.d.ts"], () => "")
+
       const pjspath = resolve(projectRoot, "package.json")
       const packagejson = require(pjspath)
       packagejson.scripts = packagejson.scripts || {}
       packagejson.scripts.testServer =
-        packagejson.scripts.testServer || 'jest -c="jest-server.config.js"'
+        packagejson.scripts.testServer || 'jest -c="jest.server.config.js"'
       fs.writeFileSync(pjspath, JSON.stringify(packagejson, null, 2))
     },
 
@@ -87,7 +90,7 @@ export function buildscript(projectRoot: string) {
 
   function loadScaffoldFile(pathInsideScaffoldFolder: string) {
     return fs.readFileSync(
-      resolve(libroot, "src", "scaffolds", pathInsideScaffoldFolder)
+      resolve(libroot, "scaffolds", pathInsideScaffoldFolder)
     )
   }
 }

@@ -1,24 +1,25 @@
 import request = require("request")
+import { validateContextType } from ".."
 
-export default {
+export const context = validateContextType({
   id: "default.mailgun",
   envKeys: ["MAILGUN_FROM", "MAILGUN_DOMAIN", "MAILGUN_API_KEY"],
   optionalKeys: [] as string[],
   envContext() {
     let out = {
-      mailgun: {
+      email: {
         from: process.env.MAILGUN_FROM!,
         domain: process.env.MAILGUN_DOMAIN!,
         apiKey: process.env.MAILGUN_API_KEY!,
         async sendMail(inp: { email: string; subject: string; html: string }) {
-          let ctx = out.mailgun
+          let ctx = out.email
           const body: any = await new Promise((res, rej) => {
             request(
               {
                 method: "POST",
                 auth: {
                   user: "api",
-                  pass: ctx.apiKey,
+                  pass: ctx.apiKey
                 },
                 url: `https://api.mailgun.net/v3/${ctx.domain}/messages`,
                 form: {
@@ -26,8 +27,8 @@ export default {
                   to: inp.email,
                   subject: inp.subject,
                   text: inp.html,
-                  html: "<html>" + inp.html + "</html>",
-                },
+                  html: "<html>" + inp.html + "</html>"
+                }
               },
               (err, response, body) => {
                 if (err) return rej(err)
@@ -36,13 +37,19 @@ export default {
                   return rej(Error("Failed while sending e-mail."))
                 }
                 res(body)
-              },
+              }
             )
           })
           return body
-        },
-      },
+        }
+      }
     }
     return out
-  },
+  }
+})
+
+declare global {
+  namespace Nextpress {
+    interface CustomContext extends ReturnType<typeof context["envContext"]> {}
+  }
 }

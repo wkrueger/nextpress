@@ -1,12 +1,13 @@
-import nextjs = require("next")
+///<reference path="../../types/global.types.d.ts"/>
 import polka = require("polka")
 import morgan = require("morgan")
 import expressSession = require("express-session")
+import { Server as NextServer } from "next"
 import rimraf = require("rimraf")
 import { promisify } from "util"
 import { resolve } from "path"
 import { RouterBuilder } from "./router-builder"
-export { default as ContextFactory, defaultMappers } from "./context"
+export { ContextFactory } from "../context"
 import helmet = require("helmet")
 
 export type PolkaApp = ReturnType<typeof polka>
@@ -29,14 +30,16 @@ class Server {
     }
   }
 
-  private _nextApp?: nextjs.Server
+  private _nextApp?: NextServer
   getNextApp() {
-    if (!this._nextApp)
+    if (!this._nextApp) {
+      const nextjs = require("next") as typeof import("next")
       this._nextApp = nextjs({
         dev: !this.isProduction,
         dir: this.ctx.projectRoot,
         conf: this.getNextjsConfig()
       })
+    }
     return this._nextApp
   }
 
@@ -143,4 +146,4 @@ class Server {
   }
 }
 
-export { Server, nextjs }
+export { Server }

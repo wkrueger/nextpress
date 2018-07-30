@@ -1,9 +1,9 @@
 import Yup = require("yup")
 import { v4 as uuid } from "uuid"
 import ono = require("ono")
-import { Server } from "../.."
+import { Server } from "../server"
 import day = require("dayjs")
-import { RouterBuilder } from "../router-builder"
+import { RouterBuilder } from "../server/router-builder"
 import { UserStore, KnexStore } from "./user-stores"
 
 const createUserSchema = Yup.object({
@@ -52,9 +52,12 @@ type SchemaType<T> = T extends Yup.ObjectSchema<infer Y> ? Y : never
 
 export class UserAuth {
   constructor(public ctx: Nextpress.Context) {
-    ctx.requireContext("default.mailgun", "default.website")
+    ctx.requireContext("default.website")
     if (this.ctx.loadedContexts.has("default.knex")) {
       this.userStore = new KnexStore(ctx.database.db())
+    }
+    if (!this.sendMail) {
+      console.warn("UserAuth: No sendMail implementation provided.")
     }
   }
 
@@ -65,7 +68,7 @@ export class UserAuth {
     return this._bcrypt
   }
 
-  sendMail = this.ctx.mailgun.sendMail
+  sendMail = this.ctx.email.sendMail
   userStore!: UserStore
 
   async init() {

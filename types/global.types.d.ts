@@ -1,3 +1,4 @@
+///<reference path="./global.types.moduleful.d.ts"/>
 declare module "@proerd/buildscript"
 declare module "next/app"
 declare module "ono"

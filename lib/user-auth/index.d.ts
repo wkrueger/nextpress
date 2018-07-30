@@ -1,6 +1,6 @@
 import Yup = require("yup");
-import { Server } from "..";
-import { RouterBuilder } from "../router-builder";
+import { Server } from "../server";
+import { RouterBuilder } from "../server/router-builder";
 import { UserStore } from "./user-stores";
 const createUserSchema: Yup.ObjectSchema<{
     email: string;

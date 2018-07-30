@@ -1,13 +1,6 @@
 import dotenv = require("dotenv")
 import path = require("path")
 import fs = require("fs")
-import mailgunMapper from "./contexts/mailgun"
-import knexMapper from "./contexts/knex"
-import websiteMapper from "./contexts/website"
-import redisMapper from "./contexts/redis"
-//required for typedefs
-import knex = require("knex")
-import redis = require("ioredis")
 
 export type ContextMapper = {
   id: string
@@ -17,24 +10,18 @@ export type ContextMapper = {
 }
 
 const validateType = <Type>() => <R extends Type>(i: R) => i
+export const validateContextType = validateType<ContextMapper>()
 
-export const defaultMappers = validateType<Record<string, ContextMapper>>()({
-  mailgun: mailgunMapper,
-  knex: knexMapper,
-  website: websiteMapper,
-  redis: redisMapper
-})
-
-type GetMapperContext<T> = T extends { envContext: () => infer R } ? R : never
-type Values<T> = T[keyof T]
-type Intersection = GetMapperContext<Values<typeof defaultMappers>>
-type GetKeys<U> = U extends Record<infer K, any> ? K : never
-type UnionToIntersection<U extends object> = {
-  [K in GetKeys<U>]: U extends Record<K, infer T> ? T : never
+export function defaultMappers(
+  ...names: ("knex" | "mailgun" | "redis" | "website")[]
+): ContextMapper[] {
+  return names.map(name => require("./defaults/" + name).context)
 }
-type GenDefaultContext = UnionToIntersection<Intersection>
 
-export default function(i: { projectRoot: string; mappers: ContextMapper[] }) {
+export function ContextFactory(i: {
+  projectRoot: string
+  mappers: ContextMapper[]
+}) {
   const pluginKeys = (i.mappers || []).reduce(
     (out, item) => {
       return [...out, ...item.envKeys]
@@ -91,9 +78,21 @@ export default function(i: { projectRoot: string; mappers: ContextMapper[] }) {
   } as Nextpress.Context
 }
 
+// generate default context type from the inferred defaultMappers
+/*
+type GetMapperContext<T> = T extends { envContext: () => infer R } ? R : never
+type Values<T> = T[keyof T]
+type Union = GetMapperContext<Values<typeof defaultMappers>>
+type GetKeys<U> = U extends Record<infer K, any> ? K : never
+type UnionToIntersection<U extends object> = {
+  [K in GetKeys<U>]: U extends Record<K, infer T> ? T : never
+}
+type GenDefaultContext = UnionToIntersection<Union>
+*/
+
 declare global {
   namespace Nextpress {
-    interface DefaultContext extends GenDefaultContext {
+    interface DefaultContext {
       projectRoot: string
       loadedContexts: Set<string>
       requireContext: (...contextIds: string[]) => void

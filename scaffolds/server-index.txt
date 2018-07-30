@@ -1,10 +1,11 @@
 import path = require("path")
-import { Server, ContextFactory, defaultMappers } from "@proerd/nextpress"
+import { Server } from "@proerd/nextpress/lib/server"
+import { ContextFactory, defaultMappers } from "@proerd/nextpress/lib/context"
 //
 ;(async () => {
   const context = ContextFactory({
     projectRoot: path.resolve(__dirname, ".."),
-    mappers: [defaultMappers.website, defaultMappers.mailgun, defaultMappers.knex],
+    mappers: defaultMappers('website', 'mailgun', 'knex'),
   })
 
   await context.database.init({

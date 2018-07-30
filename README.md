@@ -73,19 +73,46 @@ Folder structure goes like this:
   | ...
 ```
 
+## How to extend things
+
+Some things here are presented as classes with a bunch of replaceable functions.
+
+Tested/Recommended:
+
+```ts
+const auth = new UserAuth(ctx)
+auth.sendMail = myImplementation
+```
+
+Untested:
+
+```ts
+class CustomUserAuth {
+  sendMail = myImplementation
+}
+const auth = new CustomUserAuth(ctx)
+```
+
+## How to require things
+
+- The root require is now empty
+- Require through `@proerd/nextpress/<modulename>`
+
 ## Context tool
+
+Reads from the envfile and populates a settings object which is meant to be used throughout the project.
+
+May also provide (singleton-ish) methods which use the related env settings.
 
 ```typescript
 import { ContextFactory } from "nextpress"
 
 const context = ContextFactory({
   mappers: [
-    defaultMappers.website,
-    defaultMappers.mailgun,
-    defaultMappers.knex,
+    ...defaultMappers('website', 'mailgun', 'knex')
     {
       id: "auction_scan",
-      envKeys: ["BNET_API_KEY", "RUN_SERVICE"],
+      envKeys: ["BNET_API_KEY"],
       optionalKeys: ["RUN_SERVICE"],
       envContext: () => ({
         apiKey: process.env.BNET_API_KEY!,
@@ -95,16 +122,11 @@ const context = ContextFactory({
   ],
   projectRoot: path.resolve(__dirname, ".."),
 })
-})
 ```
-
-Reads from the envfile and populates a settings object which is meant to be used throughout the project.
 
 A "context mapper" describes the mapping from the `env` keys to the resulting object. A couple of default `defaultMappers` are provided. Select which you need to use for the project.
 
-The _website_ and _UserAuth_ modules require some of the default contexts to be defined. Moreover on their section.
-
-The context type is globally defined in `Nextpress.Context`, and shall be declaration-merged through `Nextpress.CustomContext` when necessary.
+The context type is globally defined in `Nextpress.Context`, and shall be declaration-merged through `Nextpress.CustomContext` when necessary. See the default contexts implementation for examples.
 
 ```typescript
 declare global {
@@ -116,13 +138,21 @@ declare global {
 }
 ```
 
-**Website root**
+### Website context
+
+Required by most other things here.
+
+**Website root on the client**
 
 While on the server the website root path can be easily acessed through the context, on the client `process.env.WEBSITE_ROOT` is used (it is replaced on the build stage -- see the `.babelrc` for details).
 
+**Bundle analyzer**
+
+- Turn on with `WEBSITE_BUNDLE_ANALYZER` env option
+
 ### Knex context
 
-- `ctx.database.db()` gets a knex instance;
+- `ctx.knex.db()` gets a knex instance;
 - optional `ctx.database.init({ currentVersion, migration })` contains a helper regarding table creation and migrations.
 - You still have to install the database driver (default is `mysql`)
 
@@ -130,11 +160,13 @@ While on the server the website root path can be easily acessed through the cont
 
 ### Redis context
 
+- Requires installing `ioredis` peer dependency.
+
 ## Default webpack config
 
 Currently includes:
 
-- Typescript (ofcourse)
+- Typescript
 - CSS (no modules)
 - Sass (no modules)
 - Lodash plugin (reduce bundle size, this effects even if you are not directly using lodash)
@@ -220,10 +252,14 @@ server.run()
 
 ## Auth boilerplate
 
-You need to install the `bcrypt` peer dependency in order to use this. Also, this initially looks for `knex` for storing the user data. If the knex context is not present, you'd need to suppy another implementation in `.userStore`.
+Dependencies:
+
+- You need to install the `bcrypt` peer dependency in order to use this;
+- This initially looks for `knex` for storing the user data. If the knex context is not present, you'd need to suppy another implementation in `.userStore`.
+- This looks for a `ctx.email.sendMail` key for sending mail. Default mailgun context has that, or you could supply another context with the same key.
 
 ```ts
-import UserAuth from "nextpress/built/user-auth"
+import UserAuth from "@proerd/nextpress/lib/server/user-auth"
 const userAuth = new UserAuth(ctx)
 await userAuth.init()
 ```
