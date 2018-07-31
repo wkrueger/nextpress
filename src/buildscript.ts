@@ -96,7 +96,6 @@ export function buildscript(projectRoot: string) {
 }
 
 const serverTsconfig = {
-  include: ["."],
   compilerOptions: {
     target: "es2017",
     module: "commonjs",
@@ -106,7 +105,9 @@ const serverTsconfig = {
     noUnusedLocals: true,
     sourceMap: true,
     pretty: false
-  }
+  },
+  include: ["."],
+  exclude: ["__tests__"]
 }
 
 const clientTsConfig = {

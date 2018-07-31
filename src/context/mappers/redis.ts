@@ -1,7 +1,7 @@
 import Redis = require("ioredis")
-import { validateContextType } from ".."
+import { createContextMapper } from ".."
 
-export const context = validateContextType({
+export const redisContext = createContextMapper({
   id: "default.redis",
   envKeys: [],
   optionalKeys: ["REDIS_URL"],
@@ -25,6 +25,7 @@ export const context = validateContextType({
 
 declare global {
   namespace Nextpress {
-    interface CustomContext extends ReturnType<typeof context["envContext"]> {}
+    interface CustomContext
+      extends ReturnType<typeof redisContext["envContext"]> {}
   }
 }

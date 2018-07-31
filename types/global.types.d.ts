@@ -1,4 +1,3 @@
-///<reference path="./global.types.moduleful.d.ts"/>
 declare module "@proerd/buildscript"
 declare module "next/app"
 declare module "ono"
@@ -16,11 +15,12 @@ declare module "connect-session-knex" {
 declare module "morgan"
 declare module "express-session"
 declare module "helmet"
-declare module "polka" {
-  const out: {
-    (): Polka.App
-    Router(): Polka.Router
-    json(): Polka.Middleware
+
+declare namespace Express {
+  interface Request {
+    session: Session
   }
-  export = out
+  interface Session {
+    destroy(err: any): void
+  }
 }

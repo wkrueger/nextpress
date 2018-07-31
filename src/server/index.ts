@@ -1,5 +1,5 @@
 ///<reference path="../../types/global.types.d.ts"/>
-import polka = require("polka")
+import expressMod = require("express")
 import morgan = require("morgan")
 import expressSession = require("express-session")
 import { Server as NextServer } from "next"
@@ -7,12 +7,11 @@ import rimraf = require("rimraf")
 import { promisify } from "util"
 import { resolve } from "path"
 import { RouterBuilder } from "./router-builder"
-export { ContextFactory } from "../context"
 import helmet = require("helmet")
 
-export type PolkaApp = ReturnType<typeof polka>
+export type PolkaApp = ReturnType<typeof expressMod>
 
-class Server {
+export class Server {
   constructor(
     public ctx: Nextpress.Context,
     public isProduction = process.env.NODE_ENV === "production"
@@ -53,7 +52,7 @@ class Server {
       await promisify(rimraf)(resolve(this.ctx.projectRoot, ".next"))
       await nextBuild(this.ctx.projectRoot, this.getNextjsConfig())
     }
-    const expressApp = polka()
+    const expressApp = expressMod()
     await this.setupGlobalMiddleware(expressApp)
     await this.setupRoutes({ app: expressApp })
     expressApp.listen(this.ctx.website.port, () =>
@@ -69,7 +68,7 @@ class Server {
     app.use(await builder.createHtmlRouter())
   }
 
-  async setupGlobalMiddleware(expressApp: Polka.App) {
+  async setupGlobalMiddleware(expressApp: expressMod.Router) {
     await this.getNextApp().prepare()
     if (this.ctx.website.logRequests) {
       expressApp.use(morgan("short"))
@@ -78,7 +77,7 @@ class Server {
     const sessionMw = this.createSessionMw(store)
     expressApp.use(sessionMw)
     const robotsPath = resolve(this.ctx.projectRoot, "static", "robots.txt")
-    expressApp.get<Polka.Middleware>("/robots.txt", (_, response) => {
+    expressApp.get("/robots.txt", (_, response) => {
       response.sendFile(robotsPath)
     })
     expressApp.use(helmet())
@@ -145,5 +144,3 @@ class Server {
     })
   }
 }
-
-export { Server }

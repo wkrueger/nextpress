@@ -2,11 +2,12 @@
 
 Package website things that could become commmon between projects into a module.
 
-Trying not to worry much about config options, it is of intention to have one big monolythic package.
+Trying not to worry much about config options, it is of intention to have one big opinionated monolythic package.
 
 Currently bundling:
 
-- ~~express~~ polka
+- dotenv
+- express
 - next.js as a view layer
 - a default configs setup with `dotenv`
 - some scaffolding (I'd like less but huh)
@@ -16,12 +17,14 @@ Currently bundling:
 - front-end reacty common things (react, react-dom, redux, formik...)
   - moved to `nextpress-client` package
 - jest
-- all with typescript in mind
+- with typescript in mind
 
 Limitations (FIXMEs)
 
 - Design for a coupled "monolithic" small server (API and website in the same project, not necessarily in the same script)
 - The website part implicitly uses session for auth
+
+> Things were moved around, some examples might be outdated
 
 ## scaffolding
 
@@ -96,7 +99,7 @@ const auth = new CustomUserAuth(ctx)
 ## How to require things
 
 - The root require is now empty
-- Require through `@proerd/nextpress/<modulename>`
+- Require through `@proerd/nextpress/lib/<modulename>`
 
 ## Context tool
 
@@ -105,22 +108,23 @@ Reads from the envfile and populates a settings object which is meant to be used
 May also provide (singleton-ish) methods which use the related env settings.
 
 ```typescript
-import { ContextFactory } from "nextpress"
+import { ContextFactory } from "nextpress/context"
+import { websiteContext } from "nextpress/context/mappers/website"
 
 const context = ContextFactory({
   mappers: [
-    ...defaultMappers('website', 'mailgun', 'knex')
+    websiteContext,
     {
       id: "auction_scan",
       envKeys: ["BNET_API_KEY"],
       optionalKeys: ["RUN_SERVICE"],
       envContext: () => ({
         apiKey: process.env.BNET_API_KEY!,
-        runService: Boolean(process.env.RUN_SERVICE),
-      }),
-    },
+        runService: Boolean(process.env.RUN_SERVICE)
+      })
+    }
   ],
-  projectRoot: path.resolve(__dirname, ".."),
+  projectRoot: path.resolve(__dirname, "..")
 })
 ```
 
@@ -137,6 +141,8 @@ declare global {
   }
 }
 ```
+
+**"The context imports are verbose!"** It wasnt always like this, but writing it this way allows for declaration merging (dynamic Nextpress.Context type) which pays it off. You may make use of the VSCode "auto imports" to reduce keystrokes there.
 
 ### Website context
 

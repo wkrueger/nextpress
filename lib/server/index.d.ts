@@ -1,9 +1,8 @@
 /// <reference path="../../types/global.types.d.ts" />
-import polka = require("polka");
+import expressMod = require("express");
 import { Server as NextServer } from "next";
-export { ContextFactory } from "../context";
-export declare type PolkaApp = ReturnType<typeof polka>;
-declare class Server {
+export declare type PolkaApp = ReturnType<typeof expressMod>;
+export declare class Server {
     ctx: Nextpress.Context;
     isProduction: boolean;
     constructor(ctx: Nextpress.Context, isProduction?: boolean);
@@ -26,7 +25,7 @@ declare class Server {
     setupRoutes({ app }: {
         app: PolkaApp;
     }): Promise<void>;
-    setupGlobalMiddleware(expressApp: Polka.App): Promise<Polka.App>;
+    setupGlobalMiddleware(expressApp: expressMod.Router): Promise<expressMod.Router>;
     /**
      * the next.config.js
      */
@@ -34,4 +33,3 @@ declare class Server {
     createSessionStore(): any;
     createSessionMw(store: any): any;
 }
-export { Server };

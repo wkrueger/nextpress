@@ -1,6 +1,6 @@
-import { validateContextType } from ".."
+import { createContextMapper } from ".."
 
-export const context = validateContextType({
+export const websiteContext = createContextMapper({
   id: "default.website",
   envKeys: ["WEBSITE_ROOT", "WEBSITE_PORT", "WEBSITE_SESSION_SECRET"],
   optionalKeys: ["WEBSITE_LOG_REQUESTS", "WEBSITE_BUNDLE_ANALYZER"],
@@ -19,6 +19,7 @@ export const context = validateContextType({
 
 declare global {
   namespace Nextpress {
-    interface CustomContext extends ReturnType<typeof context["envContext"]> {}
+    interface CustomContext
+      extends ReturnType<typeof websiteContext["envContext"]> {}
   }
 }

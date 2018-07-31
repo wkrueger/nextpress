@@ -5,6 +5,8 @@ import { Server } from "../server"
 import day = require("dayjs")
 import { RouterBuilder } from "../server/router-builder"
 import { UserStore, KnexStore } from "./user-stores"
+import { RequestHandler } from "express"
+import { timedQueueMw } from "./timed-queue"
 
 const createUserSchema = Yup.object({
   email: Yup.string()
@@ -200,14 +202,14 @@ export class UserAuth {
     )
   }
 
-  checkSession: Polka.Middleware = req => {
+  checkSession: RequestHandler = req => {
     if (!req.session) throw ono({ statusCode: 401 }, "Unauthorized")
     if (!req.session.user) throw ono({ statusCode: 401 }, "Unauthorized")
     //res.setHeader("X-User-Id", req.session.user.id)
     //res.setHeader("X-User-Email", req.session.user.email)
   }
 
-  throwOnUnauthMw: Polka.Middleware = (req, res, next) => {
+  throwOnUnauthMw: RequestHandler = (req, res, next) => {
     try {
       this.checkSession(req, res, next)
       next()
@@ -423,7 +425,7 @@ export class UserAuth {
 }
 
 declare global {
-  namespace Polka {
+  namespace Express {
     interface Session {
       user?: { id: number; email: string }
     }

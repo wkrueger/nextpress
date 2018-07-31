@@ -10,13 +10,7 @@ export type ContextMapper = {
 }
 
 const validateType = <Type>() => <R extends Type>(i: R) => i
-export const validateContextType = validateType<ContextMapper>()
-
-export function defaultMappers(
-  ...names: ("knex" | "mailgun" | "redis" | "website")[]
-): ContextMapper[] {
-  return names.map(name => require("./defaults/" + name).context)
-}
+export const createContextMapper = validateType<ContextMapper>()
 
 export function ContextFactory(i: {
   projectRoot: string

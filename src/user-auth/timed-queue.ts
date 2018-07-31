@@ -1,3 +1,5 @@
+import { RequestHandler } from "express"
+
 /**
  * FIXME: Consider using limitd or raphi
  */
@@ -18,7 +20,7 @@ class TimedQueue {
   }
 }
 
-let timedQueueMw: (size?: number, wait?: number) => Polka.Middleware = (
+export let timedQueueMw: (size?: number, wait?: number) => RequestHandler = (
   size = 10,
   wait = 10000
 ) => {

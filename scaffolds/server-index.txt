@@ -1,11 +1,14 @@
 import path = require("path")
 import { Server } from "@proerd/nextpress/lib/server"
-import { ContextFactory, defaultMappers } from "@proerd/nextpress/lib/context"
+import { ContextFactory } from "@proerd/nextpress/lib/context"
+import { websiteContext } from "@proerd/nextpress/lib/context/mappers/website"
+import { mailgunContext } from "@proerd/nextpress/lib/context/mappers/mailgun"
+import { knexContext } from "@proerd/nextpress/lib/context/mappers/mailgun"
 //
 ;(async () => {
   const context = ContextFactory({
     projectRoot: path.resolve(__dirname, ".."),
-    mappers: defaultMappers('website', 'mailgun', 'knex'),
+    mappers: [ websiteContext, mailgunContext, knexContext ],
   })
 
   await context.database.init({

@@ -1,7 +1,7 @@
 import knex = require("knex")
-import { validateContextType } from ".."
+import { createContextMapper } from ".."
 
-export const context = validateContextType({
+export const knexContext = createContextMapper({
   id: "default.knex",
   envKeys: ["DB_NAME", "DB_USER", "DB_PASS", "DB_HOST", "DB_CLIENT"],
   optionalKeys: ["DB_HOST", "DB_CLIENT"],
@@ -70,6 +70,7 @@ export const context = validateContextType({
 
 declare global {
   namespace Nextpress {
-    interface CustomContext extends ReturnType<typeof context["envContext"]> {}
+    interface CustomContext
+      extends ReturnType<typeof knexContext["envContext"]> {}
   }
 }

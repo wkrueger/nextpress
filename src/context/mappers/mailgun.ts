@@ -1,7 +1,7 @@
 import request = require("request")
-import { validateContextType } from ".."
+import { createContextMapper } from ".."
 
-export const context = validateContextType({
+export const mailgunContext = createContextMapper({
   id: "default.mailgun",
   envKeys: ["MAILGUN_FROM", "MAILGUN_DOMAIN", "MAILGUN_API_KEY"],
   optionalKeys: [] as string[],
@@ -50,6 +50,7 @@ export const context = validateContextType({
 
 declare global {
   namespace Nextpress {
-    interface CustomContext extends ReturnType<typeof context["envContext"]> {}
+    interface CustomContext
+      extends ReturnType<typeof mailgunContext["envContext"]> {}
   }
 }

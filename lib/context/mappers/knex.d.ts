@@ -1,5 +1,5 @@
 import knex = require("knex");
-export declare const context: {
+export declare const knexContext: {
     id: string;
     envKeys: string[];
     optionalKeys: string[];
@@ -21,7 +21,7 @@ export declare const context: {
 };
 declare global {
     namespace Nextpress {
-        interface CustomContext extends ReturnType<typeof context["envContext"]> {
+        interface CustomContext extends ReturnType<typeof knexContext["envContext"]> {
         }
     }
 }

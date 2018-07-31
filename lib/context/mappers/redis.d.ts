@@ -1,5 +1,5 @@
 import Redis = require("ioredis");
-export declare const context: {
+export declare const redisContext: {
     id: string;
     envKeys: never[];
     optionalKeys: string[];
@@ -11,7 +11,7 @@ export declare const context: {
 };
 declare global {
     namespace Nextpress {
-        interface CustomContext extends ReturnType<typeof context["envContext"]> {
+        interface CustomContext extends ReturnType<typeof redisContext["envContext"]> {
         }
     }
 }
