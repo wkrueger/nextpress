@@ -10,37 +10,22 @@ export function buildscript(projectRoot: string) {
 
   const tasks = {
     scaffold() {
-      checkNCreate(["server", "tsconfig.json"], () =>
-        JSON.stringify(serverTsconfig, null, 2)
-      )
-      checkNCreate(["server", "index.ts"], () =>
-        loadScaffoldFile("server-index.txt")
-      )
-      checkNCreate(["pages", "index.tsx"], () =>
-        loadScaffoldFile("client-index.txt")
-      )
+      checkNCreate(["server", "tsconfig.json"], () => JSON.stringify(serverTsconfig, null, 2))
+      checkNCreate(["server", "index.ts"], () => loadScaffoldFile("server-index.txt"))
+      checkNCreate(["pages", "index.tsx"], () => loadScaffoldFile("client-index.txt"))
       checkNCreate(["app", "index.tsx"], () => "")
-      checkNCreate(
-        ["static", "hello.txt"],
-        () => "Use this folder to host static assets."
-      )
+      checkNCreate(["static", "hello.txt"], () => "Use this folder to host static assets.")
       checkNCreate(["static", "robots.txt"], () => "")
       checkNCreate([".babelrc.js"], () => loadScaffoldFile("babelrc.txt"))
-      checkNCreate(["tsconfig.json"], () =>
-        JSON.stringify(clientTsConfig, null, 2)
-      )
-      checkNCreate([".gitignore"], () =>
-        loadScaffoldFile("gitignore.scaff.txt")
-      )
+      checkNCreate(["tsconfig.json"], () => JSON.stringify(clientTsConfig, null, 2))
+      checkNCreate([".gitignore"], () => loadScaffoldFile("gitignore.scaff.txt"))
       checkNCreate(["pages", "client-global.d.ts"], () =>
         loadScaffoldFile("client-global-types.txt")
       )
-      checkNCreate([".vscode", "launch.json"], () =>
-        loadScaffoldFile("vscode-launch.txt")
-      )
-      checkNCreate(["jest.server.config.js"], () =>
-        loadScaffoldFile("jest-config.txt")
-      )
+      checkNCreate([".vscode", "launch.json"], () => loadScaffoldFile("vscode-launch.txt"))
+      checkNCreate(["jest.server.config.js"], () => loadScaffoldFile("jest-config-server.txt"))
+      checkNCreate(["jest.client.config.js"], () => loadScaffoldFile("jest-config-client.txt"))
+      checkNCreate([".prettierrc"], () => loadScaffoldFile("prettier.txt"))
       checkNCreate(["server", "__tests__", "sample.ts"], () => "")
       checkNCreate(["server", "server-global-types.d.ts"], () => "")
 
@@ -89,9 +74,7 @@ export function buildscript(projectRoot: string) {
   }
 
   function loadScaffoldFile(pathInsideScaffoldFolder: string) {
-    return fs.readFileSync(
-      resolve(libroot, "scaffolds", pathInsideScaffoldFolder)
-    )
+    return fs.readFileSync(resolve(libroot, "scaffolds", pathInsideScaffoldFolder))
   }
 }
 
