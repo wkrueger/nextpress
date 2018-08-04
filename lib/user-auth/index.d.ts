@@ -3,17 +3,17 @@ import { Server } from "../server";
 import { RouterBuilder } from "../server/router-builder";
 import { UserStore } from "./user-stores";
 import { RequestHandler } from "express";
-declare const createUserSchema: Yup.ObjectSchema<{
+const createUserSchema: Yup.ObjectSchema<{
     email: string;
     password: string;
 }>;
-declare const emailSchema: Yup.ObjectSchema<{
+const emailSchema: Yup.ObjectSchema<{
     email: string;
 }>;
-declare const requestIdSchema: Yup.ObjectSchema<{
+const requestIdSchema: Yup.ObjectSchema<{
     requestId: string;
 }>;
-declare const pwdRequestSchema: Yup.ObjectSchema<{
+const pwdRequestSchema: Yup.ObjectSchema<{
     pwd1: string;
     pwd2: string;
     requestId: string;
@@ -24,7 +24,7 @@ export interface User {
     auth?: string;
     validationHash?: string;
 }
-declare type SchemaType<T> = T extends Yup.ObjectSchema<infer Y> ? Y : never;
+type SchemaType<T> = T extends Yup.ObjectSchema<infer Y> ? Y : never;
 export declare class UserAuth {
     ctx: Nextpress.Context;
     constructor(ctx: Nextpress.Context);
