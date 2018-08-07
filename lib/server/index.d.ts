@@ -8,6 +8,8 @@ export declare class Server {
     constructor(ctx: Nextpress.Context, isProduction?: boolean);
     options: {
         errorRoute: string;
+        useNextjs: boolean;
+        useSession: boolean;
         bundleAnalyzer: {
             analyzeServer: boolean;
             analyzeBrowser: boolean;

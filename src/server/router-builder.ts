@@ -10,9 +10,11 @@ export class RouterBuilder {
   static yup = yup
   static polka = expressMod
 
-  static tryMw = (
-    fn: expressMod.RequestHandler
-  ): expressMod.RequestHandler => async (req, res, next) => {
+  static tryMw = (fn: expressMod.RequestHandler): expressMod.RequestHandler => async (
+    req,
+    res,
+    next
+  ) => {
     try {
       await fn(req, res, next)
     } catch (err) {
@@ -27,8 +29,7 @@ export class RouterBuilder {
     const routeDict = setup(RouteDictSetters)
     Object.keys(routeDict).forEach(key => {
       let item = routeDict[key]
-      let method: "get" | "post" | "put" | "delete" =
-        item.method || ("post" as any)
+      let method: "get" | "post" | "put" | "delete" = item.method || ("post" as any)
       let mw = item.middleware || []
       let fn: expressMod.RequestHandler = async (req, res) => {
         let result = await item(req)
@@ -38,11 +39,10 @@ export class RouterBuilder {
     })
   }
 
-  private _nextHandle = this.server.getNextApp().getRequestHandler()
-
   nextMw = RouterBuilder.tryMw((req, res) => {
+    const _nextHandle = this.server.getNextApp().getRequestHandler()
     const parsedUrl = urlparse(req.url!, true)
-    this._nextHandle(req, res, parsedUrl)
+    _nextHandle(req, res, parsedUrl)
   })
 
   /**
@@ -50,20 +50,16 @@ export class RouterBuilder {
    * we add the common middleware, you set up the routes on the callback;
    * next.js middleware is always added in the end of the stack.
    */
-  async createHtmlRouter(
-    callback?: ({ router }: { router: expressMod.Router }) => Promise<void>
-  ) {
+  async createHtmlRouter(callback?: ({ router }: { router: expressMod.Router }) => Promise<void>) {
     const router = expressMod.Router()
     if (callback) {
       await callback({ router })
     }
     if (this.server.options.errorRoute) {
       const errorMw: expressMod.ErrorRequestHandler = (err, req, res, next) => {
-        this.server
-          .getNextApp()
-          .render(req, res, this.server.options.errorRoute, {
-            message: String(err)
-          })
+        this.server.getNextApp().render(req, res, this.server.options.errorRoute, {
+          message: String(err)
+        })
       }
       router.use(errorMw)
     }
@@ -75,9 +71,7 @@ export class RouterBuilder {
    * creates a router suited for JSON API routes;
    * we add the common middleware, you set up the routes on the callback;
    */
-  async createJsonRouter(
-    callback: ({ router }: { router: expressMod.Router }) => Promise<void>
-  ) {
+  async createJsonRouter(callback: ({ router }: { router: expressMod.Router }) => Promise<void>) {
     const router = expressMod.Router()
     router.use(expressMod.json())
     await callback({ router })
@@ -103,9 +97,7 @@ export class RouterBuilder {
         err.message = "DB error."
       }
       if (process.env.NODE_ENV !== "production") {
-        return res
-          .status(err.statusCode || 500)
-          .json({ error: { ...err, message: err.message } })
+        return res.status(err.statusCode || 500).json({ error: { ...err, message: err.message } })
       } else {
         return res
           .status(err.statusCode || 500)
@@ -140,10 +132,7 @@ const RouteDictSetters = {
   /**
    * (for a given route item) Adds middleware to be run before
    */
-  withMiddleware(
-    mw: expressMod.RequestHandler[],
-    item: RouteDictItem
-  ): RouteDictItem {
+  withMiddleware(mw: expressMod.RequestHandler[], item: RouteDictItem): RouteDictItem {
     item.middleware = mw
     return item
   },
@@ -171,6 +160,4 @@ const RouteDictSetters = {
 type UnwrapSchema<T> = T extends yup.ObjectSchema<infer R> ? R : never
 type SchemaDict = { [k in "query" | "params" | "body"]?: yup.ObjectSchema<any> }
 
-type UnwrapSchemaDict<T extends SchemaDict> = {
-  [k in keyof T]: UnwrapSchema<T[k]>
-}
+type UnwrapSchemaDict<T extends SchemaDict> = { [k in keyof T]: UnwrapSchema<T[k]> }

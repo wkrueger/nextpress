@@ -8,7 +8,6 @@ export declare class RouterBuilder {
     static polka: typeof expressMod;
     static tryMw: (fn: expressMod.RequestHandler) => expressMod.RequestHandler;
     static appendJsonRoutesFromDict<Dict extends Record<string, RouteDictItem>>(router: expressMod.Router, setup: (i: typeof RouteDictSetters) => Dict): void;
-    private _nextHandle;
     nextMw: expressMod.RequestHandler;
     /**
      * creates a router suited for next.js html/react routes;

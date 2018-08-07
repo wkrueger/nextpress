@@ -9,7 +9,7 @@ import { resolve } from "path"
 import { RouterBuilder } from "./router-builder"
 import helmet = require("helmet")
 
-export type PolkaApp = ReturnType<typeof expressMod>
+export type ExpressApp = ReturnType<typeof expressMod>
 
 export class Server {
   constructor(
@@ -23,6 +23,8 @@ export class Server {
 
   options = {
     errorRoute: "/error",
+    useNextjs: true,
+    useSession: true,
     bundleAnalyzer: {
       analyzeServer: false,
       analyzeBrowser: true
@@ -32,6 +34,9 @@ export class Server {
   private _nextApp?: NextServer
   getNextApp() {
     if (!this._nextApp) {
+      if (!this.options.useNextjs) {
+        throw Error("options.useNextJs is set to false.")
+      }
       const nextjs = require("next") as typeof import("next")
       this._nextApp = nextjs({
         dev: !this.isProduction,
@@ -46,7 +51,7 @@ export class Server {
    * all set, run
    */
   async run() {
-    if (this.isProduction) {
+    if (this.isProduction && this.options.useNextjs) {
       console.log("Production mode. Building...")
       const nextBuild = require("next/dist/build").default
       await promisify(rimraf)(resolve(this.ctx.projectRoot, ".next"))
@@ -55,27 +60,29 @@ export class Server {
     const expressApp = expressMod()
     await this.setupGlobalMiddleware(expressApp)
     await this.setupRoutes({ app: expressApp })
-    expressApp.listen(this.ctx.website.port, () =>
-      console.log(this.ctx.website.port)
-    )
+    expressApp.listen(this.ctx.website.port, () => console.log(this.ctx.website.port))
   }
 
   /**
    * this is meant to be overriden in order to set the server routes.
    */
-  async setupRoutes({ app }: { app: PolkaApp }): Promise<void> {
+  async setupRoutes({ app }: { app: ExpressApp }): Promise<void> {
     const builder = new RouterBuilder(this)
     app.use(await builder.createHtmlRouter())
   }
 
   async setupGlobalMiddleware(expressApp: expressMod.Router) {
-    await this.getNextApp().prepare()
+    if (this.options.useNextjs) {
+      await this.getNextApp().prepare()
+    }
     if (this.ctx.website.logRequests) {
       expressApp.use(morgan("short"))
     }
-    const store = this.createSessionStore()
-    const sessionMw = this.createSessionMw(store)
-    expressApp.use(sessionMw)
+    if (this.options.useSession) {
+      const store = this.createSessionStore()
+      const sessionMw = this.createSessionMw(store)
+      expressApp.use(sessionMw)
+    }
     const robotsPath = resolve(this.ctx.projectRoot, "static", "robots.txt")
     expressApp.get("/robots.txt", (_, response) => {
       response.sendFile(robotsPath)
