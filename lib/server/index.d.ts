@@ -1,7 +1,7 @@
 /// <reference path="../../types/global.types.d.ts" />
 import expressMod = require("express");
 import { Server as NextServer } from "next";
-export declare type PolkaApp = ReturnType<typeof expressMod>;
+export declare type ExpressApp = ReturnType<typeof expressMod>;
 export declare class Server {
     ctx: Nextpress.Context;
     isProduction: boolean;
@@ -25,7 +25,7 @@ export declare class Server {
      * this is meant to be overriden in order to set the server routes.
      */
     setupRoutes({ app }: {
-        app: PolkaApp;
+        app: ExpressApp;
     }): Promise<void>;
     setupGlobalMiddleware(expressApp: expressMod.Router): Promise<expressMod.Router>;
     /**
