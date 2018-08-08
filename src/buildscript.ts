@@ -13,7 +13,7 @@ export function buildscript(projectRoot: string) {
       checkNCreate(["server", "tsconfig.json"], () => JSON.stringify(serverTsconfig, null, 2))
       checkNCreate(["server", "index.ts"], () => loadScaffoldFile("server-index.txt"))
       checkNCreate(["pages", "index.tsx"], () => loadScaffoldFile("client-index.txt"))
-      checkNCreate(["app", "index.tsx"], () => "")
+      checkNCreate(["pages-content", "index.tsx"], () => "")
       checkNCreate(["static", "hello.txt"], () => "Use this folder to host static assets.")
       checkNCreate(["static", "robots.txt"], () => "")
       checkNCreate([".babelrc.js"], () => loadScaffoldFile("babelrc.txt"))
