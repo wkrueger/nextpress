@@ -5,14 +5,14 @@ export const knexContext = createContextMapper({
   id: "default.knex",
   envKeys: ["DB_NAME", "DB_USER", "DB_PASS", "DB_HOST", "DB_CLIENT"],
   optionalKeys: ["DB_HOST", "DB_CLIENT"],
-  envContext() {
+  envContext({ getKey }) {
     return {
       database: {
-        client: process.env.DB_CLIENT || "mysql",
-        host: process.env.DB_HOST || "127.0.0.1",
-        name: process.env.DB_NAME!,
-        user: process.env.DB_USER!,
-        password: process.env.DB_PASS!,
+        client: getKey("DB_CLIENT") || "mysql",
+        host: getKey("DB_HOST") || "127.0.0.1",
+        name: getKey("DB_NAME")!,
+        user: getKey("DB_USER")!,
+        password: getKey("DB_PASS")!,
         _db: (undefined as any) as knex,
 
         async init(opts: {
@@ -39,9 +39,7 @@ export const knexContext = createContextMapper({
             })
             await client.table("meta").insert({ version: 1 })
           }
-          let oldVersion: number = (await client
-            .table("meta")
-            .select("version"))[0].version
+          let oldVersion: number = (await client.table("meta").select("version"))[0].version
           await client.transaction(async trx => {
             await opts.migration(trx, oldVersion, opts.currentVersion)
           })
@@ -70,7 +68,6 @@ export const knexContext = createContextMapper({
 
 declare global {
   namespace Nextpress {
-    interface CustomContext
-      extends ReturnType<typeof knexContext["envContext"]> {}
+    interface CustomContext extends ReturnType<typeof knexContext["envContext"]> {}
   }
 }

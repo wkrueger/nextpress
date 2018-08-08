@@ -2,7 +2,9 @@ export declare const websiteContext: {
     id: string;
     envKeys: string[];
     optionalKeys: string[];
-    envContext(): {
+    envContext({ getKey }: {
+        getKey: (s: string) => string | undefined;
+    }): {
         website: {
             root: string;
             port: number;

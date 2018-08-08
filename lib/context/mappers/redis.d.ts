@@ -3,7 +3,9 @@ export declare const redisContext: {
     id: string;
     envKeys: never[];
     optionalKeys: string[];
-    envContext(): {
+    envContext({ getKey }: {
+        getKey: (s: string) => string | undefined;
+    }): {
         redis: {
             instance: () => Redis.Redis;
         };

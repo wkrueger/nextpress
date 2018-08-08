@@ -5,11 +5,11 @@ export const redisContext = createContextMapper({
   id: "default.redis",
   envKeys: [],
   optionalKeys: ["REDIS_URL"],
-  envContext() {
+  envContext({ getKey }) {
     let _instance: InstanceType<typeof Redis> | undefined
     function instance() {
       if (_instance) return _instance
-      if (process.env.REDIS_URL) _instance = new Redis(process.env.REDIS_URL)
+      if (getKey("REDIS_URL")) _instance = new Redis(getKey("REDIS_URL"))
       else _instance = new Redis()
       return _instance
     }
@@ -25,7 +25,6 @@ export const redisContext = createContextMapper({
 
 declare global {
   namespace Nextpress {
-    interface CustomContext
-      extends ReturnType<typeof redisContext["envContext"]> {}
+    interface CustomContext extends ReturnType<typeof redisContext["envContext"]> {}
   }
 }

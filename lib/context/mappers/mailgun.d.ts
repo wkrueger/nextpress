@@ -2,7 +2,9 @@ export declare const mailgunContext: {
     id: string;
     envKeys: string[];
     optionalKeys: string[];
-    envContext(): {
+    envContext({ getKey }: {
+        getKey: (s: string) => string | undefined;
+    }): {
         email: {
             from: string;
             domain: string;

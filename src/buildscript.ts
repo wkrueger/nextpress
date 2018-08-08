@@ -22,6 +22,7 @@ export function buildscript(projectRoot: string) {
       checkNCreate(["pages", "client-global.d.ts"], () =>
         loadScaffoldFile("client-global-types.txt")
       )
+      checkNCreate(["pages", "_document.tsx"], () => loadScaffoldFile("_document.txt"))
       checkNCreate([".vscode", "launch.json"], () => loadScaffoldFile("vscode-launch.txt"))
       checkNCreate(["jest.server.config.js"], () => loadScaffoldFile("jest-config-server.txt"))
       checkNCreate(["jest.client.config.js"], () => loadScaffoldFile("jest-config-client.txt"))

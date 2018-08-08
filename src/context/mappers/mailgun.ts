@@ -5,12 +5,12 @@ export const mailgunContext = createContextMapper({
   id: "default.mailgun",
   envKeys: ["MAILGUN_FROM", "MAILGUN_DOMAIN", "MAILGUN_API_KEY"],
   optionalKeys: [] as string[],
-  envContext() {
+  envContext({ getKey }) {
     let out = {
       email: {
-        from: process.env.MAILGUN_FROM!,
-        domain: process.env.MAILGUN_DOMAIN!,
-        apiKey: process.env.MAILGUN_API_KEY!,
+        from: getKey("MAILGUN_FROM")!,
+        domain: getKey("MAILGUN_DOMAIN")!,
+        apiKey: getKey("MAILGUN_API_KEY")!,
         async sendMail(inp: { email: string; subject: string; html: string }) {
           let ctx = out.email
           const body: any = await new Promise((res, rej) => {
@@ -50,7 +50,6 @@ export const mailgunContext = createContextMapper({
 
 declare global {
   namespace Nextpress {
-    interface CustomContext
-      extends ReturnType<typeof mailgunContext["envContext"]> {}
+    interface CustomContext extends ReturnType<typeof mailgunContext["envContext"]> {}
   }
 }

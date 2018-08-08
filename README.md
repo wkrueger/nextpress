@@ -108,8 +108,8 @@ Reads from the envfile and populates a settings object which is meant to be used
 May also provide (singleton-ish) methods which use the related env settings.
 
 ```typescript
-import { ContextFactory } from "nextpress/context"
-import { websiteContext } from "nextpress/context/mappers/website"
+import { ContextFactory } from "@nextpress/context"
+import { websiteContext } from "@nextpress/context/mappers/website"
 
 const context = ContextFactory({
   mappers: [
@@ -118,9 +118,9 @@ const context = ContextFactory({
       id: "auction_scan",
       envKeys: ["BNET_API_KEY"],
       optionalKeys: ["RUN_SERVICE"],
-      envContext: () => ({
-        apiKey: process.env.BNET_API_KEY!,
-        runService: Boolean(process.env.RUN_SERVICE)
+      envContext: ({ getKey }) => ({
+        apiKey: getKey("BNET_API_KEY")!,
+        runService: Boolean(getKey("RUN_SERVICE"))
       })
     }
   ],
@@ -129,6 +129,16 @@ const context = ContextFactory({
 ```
 
 A "context mapper" describes the mapping from the `env` keys to the resulting object. A couple of default `defaultMappers` are provided. Select which you need to use for the project.
+
+**Prefixes**
+
+A different context file and set may be used by adding a `prefix`.
+
+> Ex: with prefix=`prefix_`. Expected envvars get the `PREFIX_` prefix, envfile is read from `prefix_envfile.env`.
+
+Custom mappers must use `getKey` (from example above) to support prefixes.
+
+**Extending the typedefs**
 
 The context type is globally defined in `Nextpress.Context`, and shall be declaration-merged through `Nextpress.CustomContext` when necessary. See the default contexts implementation for examples.
 

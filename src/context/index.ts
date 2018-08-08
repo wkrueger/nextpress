@@ -6,31 +6,36 @@ export type ContextMapper = {
   id: string
   envKeys: string[]
   optionalKeys: string[]
-  envContext: () => any
+  envContext: (i: { getKey: (s: string) => string | undefined }) => any
 }
 
 const validateType = <Type>() => <R extends Type>(i: R) => i
 export const createContextMapper = validateType<ContextMapper>()
 
 export function ContextFactory(i: {
+  withPrefix?: string
   projectRoot: string
   mappers: ContextMapper[]
 }) {
+  const prefix = i.withPrefix || ""
+  const prefixUpper = prefix.toUpperCase()
   const pluginKeys = (i.mappers || []).reduce(
     (out, item) => {
-      return [...out, ...item.envKeys]
+      const envKeys = item.envKeys.map(key => prefixUpper + key)
+      return [...out, ...envKeys]
     },
     [] as string[]
   )
   const pluginOptional = (i.mappers || []).reduce(
     (out, item) => {
+      const optionalKeys = item.optionalKeys.map(key => prefixUpper + key)
       return [...out, ...item.optionalKeys]
     },
     [] as string[]
   )
   const required = pluginKeys.filter(k => pluginOptional.indexOf(k) === -1)
   if (!process.env.NO_ENVFILE) {
-    const envfilePath = path.resolve(i.projectRoot, "envfile.env")
+    const envfilePath = path.resolve(i.projectRoot, prefix + "envfile.env")
     try {
       fs.statSync(envfilePath)
     } catch (err) {
@@ -40,17 +45,18 @@ export function ContextFactory(i: {
       fs.writeFileSync(envfilePath, scaffold)
       throw Error("envfile not found. Fill up the generated one.")
     }
-    dotenv.config({ path: path.resolve(i.projectRoot, "envfile.env") })
+    dotenv.config({ path: path.resolve(i.projectRoot, prefix + "envfile.env") })
   }
   for (let x = 0; x < required.length; x++) {
     const key = required[x]
     if (!process.env[key]) throw Error(`Required env key ${key} not defined.`)
   }
+  const getKey = (key: string) => process.env[prefixUpper + key]
   const pluginContext = (i.mappers || []).reduce(
     (out, item) => {
       return {
         ...out,
-        ...item.envContext()
+        ...item.envContext({ getKey })
       }
     },
     {} as any
@@ -63,9 +69,7 @@ export function ContextFactory(i: {
       for (let i = 0; i < contextIds.length; i++) {
         const contextId = contextIds[i]
         if (!this.loadedContexts.has(contextId)) {
-          throw Error(
-            `context mapper with id: ${contextId} required but not found.`
-          )
+          throw Error(`context mapper with id: ${contextId} required but not found.`)
         }
       }
     }

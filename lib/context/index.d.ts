@@ -2,10 +2,13 @@ export declare type ContextMapper = {
     id: string;
     envKeys: string[];
     optionalKeys: string[];
-    envContext: () => any;
+    envContext: (i: {
+        getKey: (s: string) => string | undefined;
+    }) => any;
 };
 export declare const createContextMapper: <R extends ContextMapper>(i: R) => R;
 export declare function ContextFactory(i: {
+    withPrefix?: string;
     projectRoot: string;
     mappers: ContextMapper[];
 }): Nextpress.Context;

@@ -3,7 +3,9 @@ export declare const knexContext: {
     id: string;
     envKeys: string[];
     optionalKeys: string[];
-    envContext(): {
+    envContext({ getKey }: {
+        getKey: (s: string) => string | undefined;
+    }): {
         database: {
             client: string;
             host: string;
