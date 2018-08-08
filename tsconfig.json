@@ -7,7 +7,8 @@
     "sourceMap": true,
     "strict": true,
     "jsx": "react",
-    "pretty": false
+    "pretty": false,
+    "skipLibCheck": true
   },
   "include": ["src", "types"]
 }

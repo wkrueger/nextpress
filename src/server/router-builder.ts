@@ -10,7 +10,10 @@ export class RouterBuilder {
   static yup = yup
   static polka = expressMod
 
-  static tryMw = (fn: expressMod.RequestHandler): expressMod.RequestHandler => async (
+  /**
+   * Wraps request handler in try/catch/next
+   */
+  static createHandler = (fn: expressMod.RequestHandler): expressMod.RequestHandler => async (
     req,
     res,
     next
@@ -22,24 +25,25 @@ export class RouterBuilder {
     }
   }
 
-  static appendJsonRoutesFromDict<Dict extends Record<string, RouteDictItem>>(
+  static appendJsonRoutesFromDict<Dict extends Record<string, RouteOpts>>(
     router: expressMod.Router,
-    setup: (i: typeof RouteDictSetters) => Dict
+    setup: (i: typeof RouteDictHelper) => Dict
   ) {
-    const routeDict = setup(RouteDictSetters)
+    const routeDict = setup(RouteDictHelper)
     Object.keys(routeDict).forEach(key => {
-      let item = routeDict[key]
-      let method: "get" | "post" | "put" | "delete" = item.method || ("post" as any)
-      let mw = item.middleware || []
+      let routeOpts = routeDict[key]
+      let method: "get" | "post" | "put" | "delete" = routeOpts.method || ("post" as any)
+      let mw = routeOpts.middleware || []
       let fn: expressMod.RequestHandler = async (req, res) => {
-        let result = await item(req)
+        validateRequest(routeOpts, req)
+        let result = await routeOpts.handler!(req)
         res.send(result)
       }
-      router[method](key, ...mw, RouterBuilder.tryMw(fn) as any)
+      router[method](key, ...mw, RouterBuilder.createHandler(fn))
     })
   }
 
-  nextMw = RouterBuilder.tryMw((req, res) => {
+  nextMw = RouterBuilder.createHandler((req, res) => {
     const _nextHandle = this.server.getNextApp().getRequestHandler()
     const parsedUrl = urlparse(req.url!, true)
     _nextHandle(req, res, parsedUrl)
@@ -82,8 +86,8 @@ export class RouterBuilder {
     return router
   }
 
-  async createJsonRouterFromDict<Dict extends Record<string, RouteDictItem>>(
-    setup: (i: typeof RouteDictSetters) => Dict
+  async opinionatedJsonRouter<Dict extends Record<string, RouteOpts>>(
+    setup: (i: typeof RouteDictHelper) => Dict
   ) {
     return this.createJsonRouter(async ({ router }) => {
       return RouterBuilder.appendJsonRoutesFromDict(router, setup)
@@ -110,54 +114,54 @@ export class RouterBuilder {
 }
 
 export type Omit<T, K> = Pick<T, Exclude<keyof T, K>>
-export interface RouteDictItem<Replace = {}> {
-  (req: Omit<expressMod.Request, keyof Replace> & Replace): Promise<{
-    [r: string]: any
-  }>
-  method?: string
-  middleware?: expressMod.RequestHandler[]
+
+interface EditedRequestHandler<Replace = {}> {
+  (req: Omit<expressMod.Request, keyof Replace> & Replace): Promise<Record<string, any>>
 }
 
-const RouteDictSetters = {
-  yup,
+interface RouteOpts {
+  method?: string
+  middleware?: expressMod.RequestHandler[]
+  validation?: SchemaDict
+  handler?: Function
+}
 
-  /**
-   * (for a given RouteItem) Sets another http method than the default
-   */
-  withMethod(method: string, item: RouteDictItem): RouteDictItem {
-    item.method = method
-    return item
-  },
+type NeverParams = { body: unknown; query: unknown; params: unknown }
 
-  /**
-   * (for a given route item) Adds middleware to be run before
-   */
-  withMiddleware(mw: expressMod.RequestHandler[], item: RouteDictItem): RouteDictItem {
-    item.middleware = mw
-    return item
-  },
+type HandlerType<Opts> = Opts extends { validation: any }
+  ? EditedRequestHandler<UnwrapSchemaDict<Opts["validation"]>>
+  : EditedRequestHandler<NeverParams>
 
-  /**
-   * (for a given route item) Validates query and/or params with the provided rules.
-   */
-  withValidation<What extends SchemaDict>(
-    what: What,
-    item: RouteDictItem<UnwrapSchemaDict<What>>
-  ): RouteDictItem {
-    let fn: any = (req: expressMod.Request) => {
-      if (what.query) req.query = what.query.validateSync(req.query)
-      if (what.params) req.params = what.params.validateSync(req.params)
-      if (what.body) req.body = what.body.validateSync(req.body)
-      return item(req as any)
+const route = <Opts extends RouteOpts>(opts: Opts = {} as any) => {
+  return {
+    handler: (fn: HandlerType<Opts>): RouteOpts => {
+      return Object.assign(opts, { handler: fn })
     }
-    Object.keys(item).forEach(key => {
-      fn[key] = (item as any)[key]
-    })
-    return fn
   }
 }
 
-type UnwrapSchema<T> = T extends yup.ObjectSchema<infer R> ? R : never
-type SchemaDict = { [k in "query" | "params" | "body"]?: yup.ObjectSchema<any> }
+const validateRequest = (opts: RouteOpts, req: expressMod.Request) => {
+  if (!opts.validation) return
+  const what = opts.validation
+  if (what.query) req.query = what.query.validateSync(req.query)
+  if (what.params) req.params = what.params.validateSync(req.params)
+  if (what.body) req.body = what.body.validateSync(req.body)
+}
 
-type UnwrapSchemaDict<T extends SchemaDict> = { [k in keyof T]: UnwrapSchema<T[k]> }
+const RouteDictHelper = {
+  route,
+  yup
+}
+
+type UnwrapSchema<T> = T extends yup.ObjectSchema<infer R> ? R : unknown
+type SchemaDict = {
+  query?: yup.ObjectSchema<any>
+  body?: yup.ObjectSchema<any>
+  params?: yup.ObjectSchema<any>
+}
+
+type UnwrapSchemaDict<T extends SchemaDict> = {
+  query: UnwrapSchema<T["query"]>
+  body: UnwrapSchema<T["body"]>
+  params: UnwrapSchema<T["params"]>
+}

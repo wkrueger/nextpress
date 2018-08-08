@@ -15,12 +15,3 @@ declare module "connect-session-knex" {
 declare module "morgan"
 declare module "express-session"
 declare module "helmet"
-
-declare namespace Express {
-  interface Request {
-    session: Session
-  }
-  interface Session {
-    destroy(err: any): void
-  }
-}

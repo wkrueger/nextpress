@@ -6,8 +6,11 @@ export declare class RouterBuilder {
     constructor(server: Server);
     static yup: typeof yup;
     static polka: typeof expressMod;
-    static tryMw: (fn: expressMod.RequestHandler) => expressMod.RequestHandler;
-    static appendJsonRoutesFromDict<Dict extends Record<string, RouteDictItem>>(router: expressMod.Router, setup: (i: typeof RouteDictSetters) => Dict): void;
+    /**
+     * Wraps request handler in try/catch/next
+     */
+    static createHandler: (fn: expressMod.RequestHandler) => expressMod.RequestHandler;
+    static appendJsonRoutesFromDict<Dict extends Record<string, RouteOpts>>(router: expressMod.Router, setup: (i: typeof RouteDictHelper) => Dict): void;
     nextMw: expressMod.RequestHandler;
     /**
      * creates a router suited for next.js html/react routes;
@@ -24,37 +27,42 @@ export declare class RouterBuilder {
     createJsonRouter(callback: ({ router }: {
         router: expressMod.Router;
     }) => Promise<void>): Promise<import("express-serve-static-core").Router>;
-    createJsonRouterFromDict<Dict extends Record<string, RouteDictItem>>(setup: (i: typeof RouteDictSetters) => Dict): Promise<import("express-serve-static-core").Router>;
+    opinionatedJsonRouter<Dict extends Record<string, RouteOpts>>(setup: (i: typeof RouteDictHelper) => Dict): Promise<import("express-serve-static-core").Router>;
     jsonErrorHandler: expressMod.ErrorRequestHandler;
 }
 export declare type Omit<T, K> = Pick<T, Exclude<keyof T, K>>;
-export interface RouteDictItem<Replace = {}> {
-    (req: Omit<expressMod.Request, keyof Replace> & Replace): Promise<{
-        [r: string]: any;
-    }>;
+interface EditedRequestHandler<Replace = {}> {
+    (req: Omit<expressMod.Request, keyof Replace> & Replace): Promise<Record<string, any>>;
+}
+interface RouteOpts {
     method?: string;
     middleware?: expressMod.RequestHandler[];
+    validation?: SchemaDict;
+    handler?: Function;
 }
-declare const RouteDictSetters: {
-    yup: typeof yup;
-    /**
-     * (for a given RouteItem) Sets another http method than the default
-     */
-    withMethod(method: string, item: RouteDictItem<{}>): RouteDictItem<{}>;
-    /**
-     * (for a given route item) Adds middleware to be run before
-     */
-    withMiddleware(mw: expressMod.RequestHandler[], item: RouteDictItem<{}>): RouteDictItem<{}>;
-    /**
-     * (for a given route item) Validates query and/or params with the provided rules.
-     */
-    withValidation<What extends SchemaDict>(what: What, item: RouteDictItem<UnwrapSchemaDict<What>>): RouteDictItem<{}>;
+declare type NeverParams = {
+    body: unknown;
+    query: unknown;
+    params: unknown;
 };
-declare type UnwrapSchema<T> = T extends yup.ObjectSchema<infer R> ? R : never;
+declare type HandlerType<Opts> = Opts extends {
+    validation: any;
+} ? EditedRequestHandler<UnwrapSchemaDict<Opts["validation"]>> : EditedRequestHandler<NeverParams>;
+declare const RouteDictHelper: {
+    route: <Opts extends RouteOpts>(opts?: Opts) => {
+        handler: (fn: HandlerType<Opts>) => RouteOpts;
+    };
+    yup: typeof yup;
+};
+declare type UnwrapSchema<T> = T extends yup.ObjectSchema<infer R> ? R : unknown;
 declare type SchemaDict = {
-    [k in "query" | "params" | "body"]?: yup.ObjectSchema<any>;
+    query?: yup.ObjectSchema<any>;
+    body?: yup.ObjectSchema<any>;
+    params?: yup.ObjectSchema<any>;
 };
 declare type UnwrapSchemaDict<T extends SchemaDict> = {
-    [k in keyof T]: UnwrapSchema<T[k]>;
+    query: UnwrapSchema<T["query"]>;
+    body: UnwrapSchema<T["body"]>;
+    params: UnwrapSchema<T["params"]>;
 };
 export {};

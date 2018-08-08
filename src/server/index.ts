@@ -2,6 +2,7 @@
 import expressMod = require("express")
 import morgan = require("morgan")
 import expressSession = require("express-session")
+import jwt = require("jsonwebtoken")
 import { Server as NextServer } from "next"
 import rimraf = require("rimraf")
 import { promisify } from "util"
@@ -25,6 +26,11 @@ export class Server {
     errorRoute: "/error",
     useNextjs: true,
     useSession: true,
+    useJwt: false,
+    jwtOptions: {
+      tokenHeader: "X-Auth-Token",
+      tokenDuration: 60 * 60 * 12 * 5 //5 days
+    },
     bundleAnalyzer: {
       analyzeServer: false,
       analyzeBrowser: true
@@ -82,6 +88,13 @@ export class Server {
       const store = this.createSessionStore()
       const sessionMw = this.createSessionMw(store)
       expressApp.use(sessionMw)
+      const authMw = this.createAuthMw_Session()
+      expressApp.use(authMw)
+    }
+    if (this.options.useJwt) {
+      if (!this.ctx.jwt) throw Error("useJwt requires a jwt contextMapper.")
+      const authMw = this.createAuthMw_Jwt()
+      expressApp.use(authMw)
     }
     const robotsPath = resolve(this.ctx.projectRoot, "static", "robots.txt")
     expressApp.get("/robots.txt", (_, response) => {
@@ -149,5 +162,99 @@ export class Server {
       saveUninitialized: false,
       store
     })
+  }
+
+  createAuthMw_Session() {
+    const out: expressMod.RequestHandler = (req, _, next) => {
+      req.nextpressAuth = new UserAuthSession(req)
+      next()
+    }
+    return out
+  }
+
+  createAuthMw_Jwt() {
+    const out: expressMod.RequestHandler = (req, _, next) => {
+      req.nextpressAuth = new UserAuthJwt(req, {
+        headerKey: this.options.jwtOptions.tokenHeader,
+        durationSeconds: this.options.jwtOptions.tokenDuration,
+        secret: this.ctx.jwt.secret
+      })
+      next()
+    }
+    return out
+  }
+}
+
+interface User {
+  id: number
+  email: string
+}
+
+class UserAuthSession {
+  constructor(public req: any) {}
+
+  async getUser(): Promise<User | undefined> {
+    return (this.req.session && this.req.session.user) || undefined
+  }
+
+  async setUser(user: User): Promise<string> {
+    if (!this.req.session) {
+      throw Error("Session not present.")
+    }
+    this.req.session.user = user
+    return ""
+  }
+
+  async logout() {
+    await new Promise(res => {
+      this.req.session.destroy(res)
+    })
+  }
+}
+
+class UserAuthJwt implements UserAuthSession {
+  constructor(
+    public req: any,
+    private opts: { headerKey: string; secret: string; durationSeconds: number }
+  ) {}
+
+  private _user: User | undefined
+
+  async getUser() {
+    if (this._user) return this._user
+    const token: string = this.req.headers[this.opts.headerKey]
+    if (!token) return undefined
+    const decoded = await new Promise<any>((resolve, reject) => {
+      jwt.verify(token, this.opts.secret, (err, resp) => {
+        if (err) return reject(err)
+        return resolve(resp)
+      })
+    })
+    console.log("decoded", decoded)
+    return decoded
+  }
+
+  async setUser(user: User) {
+    if (this._user) throw Error("User already set.")
+    const token = await new Promise<string>((resolve, reject) => {
+      jwt.sign(user, this.opts.secret, { expiresIn: this.opts.durationSeconds }, (err, token) => {
+        if (err) return reject(err)
+        return resolve(token)
+      })
+    })
+    this._user = user
+    return token
+  }
+
+  async logout() {
+    this._user = undefined
+  }
+}
+
+declare global {
+  namespace Express {
+    interface Request {
+      nextpressAuth: UserAuthSession | UserAuthJwt
+    }
   }
 }

@@ -10,6 +10,11 @@ export declare class Server {
         errorRoute: string;
         useNextjs: boolean;
         useSession: boolean;
+        useJwt: boolean;
+        jwtOptions: {
+            tokenHeader: string;
+            tokenDuration: number;
+        };
         bundleAnalyzer: {
             analyzeServer: boolean;
             analyzeBrowser: boolean;
@@ -34,4 +39,38 @@ export declare class Server {
     getNextjsConfig(): any;
     createSessionStore(): any;
     createSessionMw(store: any): any;
+    createAuthMw_Session(): expressMod.RequestHandler;
+    createAuthMw_Jwt(): expressMod.RequestHandler;
 }
+interface User {
+    id: number;
+    email: string;
+}
+class UserAuthSession {
+    req: any;
+    constructor(req: any);
+    getUser(): Promise<User | undefined>;
+    setUser(user: User): Promise<string>;
+    logout(): Promise<void>;
+}
+class UserAuthJwt implements UserAuthSession {
+    req: any;
+    private opts;
+    constructor(req: any, opts: {
+        headerKey: string;
+        secret: string;
+        durationSeconds: number;
+    });
+    private _user;
+    getUser(): Promise<any>;
+    setUser(user: User): Promise<string>;
+    logout(): Promise<void>;
+}
+declare global {
+    namespace Express {
+        interface Request {
+            nextpressAuth: UserAuthSession | UserAuthJwt;
+        }
+    }
+}
+export {};

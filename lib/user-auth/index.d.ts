@@ -3,17 +3,17 @@ import { Server } from "../server";
 import { RouterBuilder } from "../server/router-builder";
 import { UserStore } from "./user-stores";
 import { RequestHandler } from "express";
-const createUserSchema: Yup.ObjectSchema<{
+declare const createUserSchema: Yup.ObjectSchema<{
     email: string;
     password: string;
 }>;
-const emailSchema: Yup.ObjectSchema<{
+declare const emailSchema: Yup.ObjectSchema<{
     email: string;
 }>;
-const requestIdSchema: Yup.ObjectSchema<{
+declare const requestIdSchema: Yup.ObjectSchema<{
     requestId: string;
 }>;
-const pwdRequestSchema: Yup.ObjectSchema<{
+declare const pwdRequestSchema: Yup.ObjectSchema<{
     pwd1: string;
     pwd2: string;
     requestId: string;
@@ -24,7 +24,7 @@ export interface User {
     auth?: string;
     validationHash?: string;
 }
-type SchemaType<T> = T extends Yup.ObjectSchema<infer Y> ? Y : never;
+declare type SchemaType<T> = T extends Yup.ObjectSchema<infer Y> ? Y : never;
 export declare class UserAuth {
     ctx: Nextpress.Context;
     constructor(ctx: Nextpress.Context);
@@ -93,15 +93,5 @@ export declare class UserAuth {
     }): string;
     _pwdResetEmailSubject(): string;
     _newAccountEmailSubject(): string;
-}
-declare global {
-    namespace Express {
-        interface Session {
-            user?: {
-                id: number;
-                email: string;
-            };
-        }
-    }
 }
 export {};

@@ -3,7 +3,7 @@ import { Server } from "@proerd/nextpress/lib/server"
 import { ContextFactory } from "@proerd/nextpress/lib/context"
 import { websiteContext } from "@proerd/nextpress/lib/context/mappers/website"
 import { mailgunContext } from "@proerd/nextpress/lib/context/mappers/mailgun"
-import { knexContext } from "@proerd/nextpress/lib/context/mappers/mailgun"
+import { knexContext } from "@proerd/nextpress/lib/context/mappers/knex"
 //
 ;(async () => {
   const context = ContextFactory({

@@ -13,7 +13,7 @@ const createUserSchema = Yup.object({
     .email()
     .required(),
   password: Yup.string()
-    .min(8)
+    .min(6)
     .required()
 })
 
@@ -32,10 +32,10 @@ const requestIdSchema = Yup.object({
 
 const pwdRequestSchema = Yup.object({
   pwd1: Yup.string()
-    .min(8)
+    .min(6)
     .required(),
   pwd2: Yup.string()
-    .min(8)
+    .min(6)
     .required(),
   requestId: Yup.string()
     .min(36)
@@ -100,10 +100,7 @@ export class UserAuth {
     }
   }
 
-  async create(
-    inp: SchemaType<typeof createUserSchema>,
-    opts = { askForValidation: true }
-  ) {
+  async create(inp: SchemaType<typeof createUserSchema>, opts = { askForValidation: true }) {
     createUserSchema.validateSync(inp, { strict: true })
     const pwdHash = await this.bcrypt.hash(inp.password, 10)
     const validationHash = opts.askForValidation ? uuid() : null
@@ -148,15 +145,12 @@ export class UserAuth {
     return { id: found.id, email: found.email }
   }
 
-  async find(
-    inp: SchemaType<typeof createUserSchema>
-  ): Promise<User | undefined> {
+  async find(inp: SchemaType<typeof createUserSchema>): Promise<User | undefined> {
     createUserSchema.validateSync(inp, { strict: true })
     const user = await this.userStore.queryUserByEmail(inp.email)
     if (!user) return undefined
     const check = await this.bcrypt.compare(inp.password, user.auth!)
-    if (user.validationHash)
-      throw Error("User needs to validate his email first.")
+    if (user.validationHash) throw Error("User needs to validate his email first.")
     return check ? { id: user.id, email: user.email } : undefined
   }
 
@@ -185,9 +179,7 @@ export class UserAuth {
 
   async findResetPwdRequest(inp: SchemaType<typeof requestIdSchema>) {
     requestIdSchema.validateSync(inp)
-    const found = await this.userStore.queryUserByResetPasswordHash(
-      inp.requestId
-    )
+    const found = await this.userStore.queryUserByResetPasswordHash(inp.requestId)
     return found ? true : false
   }
 
@@ -196,22 +188,20 @@ export class UserAuth {
     const found = await this.findResetPwdRequest({ requestId: inp.requestId })
     if (!found) throw Error("Invalid request")
     if (inp.pwd1 !== inp.pwd2) throw Error("Password confirmation failed.")
-    await this.userStore.writeNewPassword(
-      inp.requestId,
-      await this.bcrypt.hash(inp.pwd1, 10)
-    )
+    await this.userStore.writeNewPassword(inp.requestId, await this.bcrypt.hash(inp.pwd1, 10))
   }
 
-  checkSession: RequestHandler = req => {
-    if (!req.session) throw ono({ statusCode: 401 }, "Unauthorized")
-    if (!req.session.user) throw ono({ statusCode: 401 }, "Unauthorized")
+  checkSession: RequestHandler = async req => {
+    if (!req.nextpressAuth) throw ono({ statusCode: 401 }, "Unauthorized")
+    let user = await req.nextpressAuth.getUser()
+    if (!user) throw ono({ statusCode: 401 }, "Unauthorized")
     //res.setHeader("X-User-Id", req.session.user.id)
     //res.setHeader("X-User-Email", req.session.user.email)
   }
 
-  throwOnUnauthMw: RequestHandler = (req, res, next) => {
+  throwOnUnauthMw: RequestHandler = async (req, res, next) => {
     try {
-      this.checkSession(req, res, next)
+      await this.checkSession(req, res, next)
       next()
     } catch (err) {
       next(err)
@@ -237,116 +227,97 @@ export class UserAuth {
    */
   _getPerUserWaitTime() {
     return {
-      login: 5,
-      requestPasswordReset: 15
+      login: 2,
+      requestPasswordReset: 10
     }
   }
 
   async userRoutes(routerBuilder: RouterBuilder) {
     const User = this
     const queues = this._getRequestThrottleMws()
-    const json = await routerBuilder.createJsonRouterFromDict(
-      ({ withMiddleware, withMethod, withValidation, yup }) => ({
-        "/createuser": withMiddleware(
-          [queues.createUser],
-          withValidation(
-            {
-              body: yup.object({
-                newUserEmail: yup.string().email(),
-                newUserPwd: yup.string().min(8)
-              })
-            },
-            async req => {
-              await User.create({
-                email: req.body.newUserEmail,
-                password: req.body.newUserPwd
-              })
-              return { status: "OK" }
-            }
-          )
-        ),
-
-        "/login": withMiddleware(
-          [queues.login],
-          withValidation(
-            {
-              body: yup.object({
-                existingUserEmail: yup.string().email(),
-                existingUserPwd: yup.string().min(8)
-              })
-            },
-            async req => {
-              await this.checkAndUpdateUserRequestCap(
-                req.body.existingUserEmail,
-                this._getPerUserWaitTime().login
-              )
-              const user = await User.find({
-                email: req.body.existingUserEmail,
-                password: req.body.existingUserPwd
-              })
-              if (!user) {
-                throw ono(
-                  { statusCode: 401 },
-                  "Could not authenticate with what you entered."
-                )
-              }
-              req.session!.user = { email: user.email, id: user.id }
-              return { status: "OK" }
-            }
-          )
-        ),
-
-        "/request-password-reset": withMiddleware(
-          [queues.requestReset],
-          withValidation(
-            { body: yup.object({ email: yup.string().email() }) },
-            async req => {
-              await this.checkAndUpdateUserRequestCap(
-                req.body.email,
-                this._getPerUserWaitTime().requestPasswordReset
-              )
-              await User.createResetPwdRequest({ email: req.body.email })
-              return { status: "OK" }
-            }
-          )
-        ),
-
-        "/perform-password-reset": withMiddleware(
-          [queues.performReset],
-          withValidation(
-            {
-              body: yup.object({
-                pwd1: yup.string().min(8),
-                pwd2: yup.string().min(8),
-                requestId: yup.string().required()
-              })
-            },
-            async req => {
-              await User.performResetPwd(req.body)
-              return { status: "OK" }
-            }
-          )
-        ),
-
-        "/logout": withMethod(
-          "all",
-          withMiddleware([User.throwOnUnauthMw], async req => {
-            await new Promise(res => {
-              req.session!.destroy(res)
-            })
-            return { status: "OK" }
+    const json = await routerBuilder.opinionatedJsonRouter(({ route, yup }) => ({
+      "/createUser": route({
+        middleware: [queues.createUser],
+        validation: {
+          body: yup.object({
+            newUserEmail: yup.string().email(),
+            newUserPwd: yup.string().min(6)
           })
+        }
+      }).handler(async req => {
+        await User.create({
+          email: req.body.newUserEmail,
+          password: req.body.newUserPwd
+        })
+        return { status: "OK" }
+      }),
+
+      "/login": route({
+        middleware: [queues.login],
+        validation: {
+          body: yup.object({
+            existingUserEmail: yup.string().email(),
+            existingUserPwd: yup.string().min(6)
+          })
+        }
+      }).handler(async req => {
+        await this.checkAndUpdateUserRequestCap(
+          req.body.existingUserEmail,
+          this._getPerUserWaitTime().login
         )
+        const user = await User.find({
+          email: req.body.existingUserEmail,
+          password: req.body.existingUserPwd
+        })
+        if (!user) {
+          throw ono({ statusCode: 401 }, "Could not authenticate with what you entered.")
+        }
+        const token = await req.nextpressAuth.setUser({ email: user.email, id: user.id })
+        return { status: "OK", token }
+      }),
+
+      "/request-password-reset": route({
+        middleware: [queues.requestReset],
+        validation: { body: yup.object({ email: yup.string().email() }) }
+      }).handler(async req => {
+        await this.checkAndUpdateUserRequestCap(
+          req.body.email,
+          this._getPerUserWaitTime().requestPasswordReset
+        )
+        await User.createResetPwdRequest({ email: req.body.email })
+        return { status: "OK" }
+      }),
+
+      "/perform-password-reset": route({
+        middleware: [queues.performReset],
+        validation: {
+          body: yup.object({
+            pwd1: yup.string().min(6),
+            pwd2: yup.string().min(6),
+            requestId: yup.string().required()
+          })
+        }
+      }).handler(async req => {
+        await User.performResetPwd(req.body)
+        return { status: "OK" }
+      }),
+
+      "/logout": route({
+        method: "all",
+        middleware: [User.throwOnUnauthMw]
+      }).handler(async req => {
+        if (req.nextpressAuth) await req.nextpressAuth.logout()
+        return { status: "OK" }
       })
-    )
+    }))
 
     const html = await routerBuilder.createHtmlRouter(async ({ router }) => {
       router.get(
         this._validateRoute(),
-        RouterBuilder.tryMw(async (req, res) => {
+        RouterBuilder.createHandler(async (req, res) => {
           const hash = req.query.seq
           let user = await User.validate(hash)
-          req.session!.user = { id: user.id, email: user.email }
+          req.nextpressAuth.setUser({ id: user.id, email: user.email })
           return this._renderSimpleMessage(
             routerBuilder.server,
             req,
@@ -361,13 +332,7 @@ export class UserAuth {
     return { json, html }
   }
 
-  _renderSimpleMessage(
-    server: Server,
-    req: any,
-    res: any,
-    title: string,
-    message: string
-  ) {
+  _renderSimpleMessage(server: Server, req: any, res: any, title: string, message: string) {
     return server.getNextApp().render(req, res, "/auth/message", {
       title: title,
       content: message
@@ -397,9 +362,7 @@ export class UserAuth {
   }
 
   _createValidationLink(hash: string) {
-    return `${
-      this.ctx.website.root
-    }${this._validateRoute()}?seq=${encodeURIComponent(hash)}`
+    return `${this.ctx.website.root}${this._validateRoute()}?seq=${encodeURIComponent(hash)}`
   }
 
   _createResetPasswordLink(seq: string) {
@@ -421,13 +384,5 @@ export class UserAuth {
 
   _newAccountEmailSubject() {
     return "New account"
-  }
-}
-
-declare global {
-  namespace Express {
-    interface Session {
-      user?: { id: number; email: string }
-    }
   }
 }
