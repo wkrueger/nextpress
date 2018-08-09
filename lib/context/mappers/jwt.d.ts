@@ -1,4 +1,4 @@
-export declare const websiteContext: {
+export declare const jwtContext: {
     id: string;
     envKeys: string[];
     optionalKeys: never[];
@@ -12,7 +12,7 @@ export declare const websiteContext: {
 };
 declare global {
     namespace Nextpress {
-        interface CustomContext extends ReturnType<typeof websiteContext["envContext"]> {
+        interface CustomContext extends ReturnType<typeof jwtContext["envContext"]> {
         }
     }
 }

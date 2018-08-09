@@ -12,6 +12,8 @@ export declare const knexContext: {
             name: string;
             user: string;
             password: string;
+            _currentFwVersion: number;
+            _oldFwVersion: number;
             _db: knex;
             init(opts: {
                 currentVersion: number;

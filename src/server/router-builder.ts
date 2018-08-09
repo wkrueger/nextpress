@@ -54,7 +54,10 @@ export class RouterBuilder {
    * we add the common middleware, you set up the routes on the callback;
    * next.js middleware is always added in the end of the stack.
    */
-  async createHtmlRouter(callback?: ({ router }: { router: expressMod.Router }) => Promise<void>) {
+  async createHtmlRouter(
+    callback?: ({ router }: { router: expressMod.Router }) => Promise<void>,
+    options: { noNextJs?: boolean } = {}
+  ) {
     const router = expressMod.Router()
     if (callback) {
       await callback({ router })
@@ -67,7 +70,9 @@ export class RouterBuilder {
       }
       router.use(errorMw)
     }
-    router.use(this.nextMw)
+    if (!options.noNextJs) {
+      router.use(this.nextMw)
+    }
     return router
   }
 

@@ -27,10 +27,10 @@ export declare abstract class UserStore {
     abstract writeResetPwdRequest(email: string, hash: string, expires: Date): Promise<number>;
     abstract writeNewPassword(requestId: string, pwdhash: string): Promise<void>;
 }
-declare type Knex = ReturnType<Nextpress.Context["database"]["db"]>;
 export declare class KnexStore extends UserStore {
-    _knex: Knex;
-    constructor(_knex: Knex);
+    ctx: Nextpress.Context;
+    constructor(ctx: Nextpress.Context);
+    _knex: knexMod;
     userTableName: string;
     userTable(): knexMod.QueryBuilder;
     initStore(): Promise<void>;

@@ -12,7 +12,7 @@ Currently bundling:
 - a default configs setup with `dotenv`
 - some scaffolding (I'd like less but huh)
 - DB support: knex/redis
-- sessions by default
+- sessions or jwts
 - an auth workflow
 - front-end reacty common things (react, react-dom, redux, formik...)
   - moved to `nextpress-client` package
@@ -22,9 +22,6 @@ Currently bundling:
 Limitations (FIXMEs)
 
 - Design for a coupled "monolithic" small server (API and website in the same project, not necessarily in the same script)
-- The website part implicitly uses session for auth
-
-> Things were moved around, some examples might be outdated
 
 ## scaffolding
 

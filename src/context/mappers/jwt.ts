@@ -1,6 +1,6 @@
 import { createContextMapper } from ".."
 
-export const websiteContext = createContextMapper({
+export const jwtContext = createContextMapper({
   id: "default.jwt",
   envKeys: ["JWT_SECRET"],
   optionalKeys: [],
@@ -15,6 +15,6 @@ export const websiteContext = createContextMapper({
 
 declare global {
   namespace Nextpress {
-    interface CustomContext extends ReturnType<typeof websiteContext["envContext"]> {}
+    interface CustomContext extends ReturnType<typeof jwtContext["envContext"]> {}
   }
 }

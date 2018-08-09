@@ -56,7 +56,7 @@ export class UserAuth {
   constructor(public ctx: Nextpress.Context) {
     ctx.requireContext("default.website")
     if (this.ctx.loadedContexts.has("default.knex")) {
-      this.userStore = new KnexStore(ctx.database.db())
+      this.userStore = new KnexStore(ctx)
     }
     if (!this.sendMail) {
       console.warn("UserAuth: No sendMail implementation provided.")
@@ -70,7 +70,7 @@ export class UserAuth {
     return this._bcrypt
   }
 
-  sendMail = this.ctx.email.sendMail
+  sendMail? = this.ctx.email && this.ctx.email.sendMail
   userStore!: UserStore
 
   async init() {
@@ -121,6 +121,9 @@ export class UserAuth {
     if (opts.askForValidation) {
       try {
         const link = this._createValidationLink(validationHash!)
+        if (!this.sendMail) {
+          throw Error("No email setup provided.")
+        }
         await this.sendMail({
           email: inp.email,
           subject: this._newAccountEmailSubject(),
@@ -166,6 +169,9 @@ export class UserAuth {
     )
     const link = this._createResetPasswordLink(requestId)
     if (storeId) {
+      if (!this.sendMail) {
+        throw Error("No email setup provided.")
+      }
       await this.sendMail({
         email: inp.email,
         subject: this._pwdResetEmailSubject(),
@@ -311,23 +317,26 @@ export class UserAuth {
       })
     }))
 
-    const html = await routerBuilder.createHtmlRouter(async ({ router }) => {
-      router.get(
-        this._validateRoute(),
-        RouterBuilder.createHandler(async (req, res) => {
-          const hash = req.query.seq
-          let user = await User.validate(hash)
-          req.nextpressAuth.setUser({ id: user.id, email: user.email })
-          return this._renderSimpleMessage(
-            routerBuilder.server,
-            req,
-            res,
-            "Success",
-            "User validated."
-          )
-        })
-      )
-    })
+    const html = await routerBuilder.createHtmlRouter(
+      async ({ router }) => {
+        router.get(
+          this._validateRoute(),
+          RouterBuilder.createHandler(async (req, res) => {
+            const hash = req.query.seq
+            let user = await User.validate(hash)
+            req.nextpressAuth.setUser({ id: user.id, email: user.email })
+            return this._renderSimpleMessage(
+              routerBuilder.server,
+              req,
+              res,
+              "Success",
+              "User validated."
+            )
+          })
+        )
+      },
+      { noNextJs: true }
+    )
 
     return { json, html }
   }

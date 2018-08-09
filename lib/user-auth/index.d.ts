@@ -30,11 +30,11 @@ export declare class UserAuth {
     constructor(ctx: Nextpress.Context);
     _bcrypt: any;
     readonly bcrypt: typeof import("bcrypt");
-    sendMail: (inp: {
+    sendMail?: ((inp: {
         email: string;
         subject: string;
         html: string;
-    }) => Promise<any>;
+    }) => Promise<any>) | undefined;
     userStore: UserStore;
     init(): Promise<void>;
     private checkAndUpdateUserRequestCap;

@@ -13,6 +13,8 @@ export const knexContext = createContextMapper({
         name: getKey("DB_NAME")!,
         user: getKey("DB_USER")!,
         password: getKey("DB_PASS")!,
+        _currentFwVersion: 2,
+        _oldFwVersion: 0,
         _db: (undefined as any) as knex,
 
         async init(opts: {
@@ -24,6 +26,7 @@ export const knexContext = createContextMapper({
           ) => Promise<void>
         }) {
           const client = this.db()
+          const CURRENT_FW_VERSION = this._currentFwVersion
           if (!(await client.schema.hasTable("meta"))) {
             await client.schema.createTable("meta", table => {
               table.increments()
@@ -37,12 +40,16 @@ export const knexContext = createContextMapper({
                 .notNullable()
                 .defaultTo(1)
             })
-            await client.table("meta").insert({ version: 1 })
+            await client.table("meta").insert({ version: CURRENT_FW_VERSION })
           }
-          let oldVersion: number = (await client.table("meta").select("version"))[0].version
+          let { version: oldVersion, fwVersion } = (await client
+            .table("meta")
+            .select("version", "fwVersion"))[0]
+          this._oldFwVersion = fwVersion
           await client.transaction(async trx => {
             await opts.migration(trx, oldVersion, opts.currentVersion)
           })
+          //fixme: should not be updated here, but in another user defined place
           await client.table("meta").update({ version: opts.currentVersion })
         },
 

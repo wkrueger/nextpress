@@ -25,7 +25,7 @@ export declare class Server {
     /**
      * all set, run
      */
-    run(): Promise<void>;
+    run(): Promise<{}>;
     /**
      * this is meant to be overriden in order to set the server routes.
      */

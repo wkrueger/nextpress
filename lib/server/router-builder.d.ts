@@ -19,7 +19,9 @@ export declare class RouterBuilder {
      */
     createHtmlRouter(callback?: ({ router }: {
         router: expressMod.Router;
-    }) => Promise<void>): Promise<import("express-serve-static-core").Router>;
+    }) => Promise<void>, options?: {
+        noNextJs?: boolean;
+    }): Promise<import("express-serve-static-core").Router>;
     /**
      * creates a router suited for JSON API routes;
      * we add the common middleware, you set up the routes on the callback;

@@ -23,25 +23,20 @@ export abstract class UserStore {
   abstract queryUserByValidationHash(
     hash: string
   ): Promise<{ id: number; email: string } | undefined>
-  abstract queryUserByResetPasswordHash(
-    hash: string
-  ): Promise<number | undefined>
+  abstract queryUserByResetPasswordHash(hash: string): Promise<number | undefined>
   abstract queryUserByEmail(email: string): Promise<undefined | User>
   abstract clearValidationHash(userId: number): Promise<void>
-  abstract writeResetPwdRequest(
-    email: string,
-    hash: string,
-    expires: Date
-  ): Promise<number>
+  abstract writeResetPwdRequest(email: string, hash: string, expires: Date): Promise<number>
   abstract writeNewPassword(requestId: string, pwdhash: string): Promise<void>
 }
 
 type Knex = ReturnType<Nextpress.Context["database"]["db"]>
 
 export class KnexStore extends UserStore {
-  constructor(public _knex: Knex) {
+  constructor(public ctx: Nextpress.Context) {
     super()
   }
+  _knex = this.ctx.database.db()
 
   userTableName = "user"
 
@@ -50,18 +45,34 @@ export class KnexStore extends UserStore {
   }
 
   async initStore() {
-    if (!(await this._knex.schema.hasTable(this.userTableName))) {
-      await this._knex.schema.createTable(this.userTableName, table => {
-        table.increments()
-        table.string("email", 30).unique()
-        table.string("auth", 80)
-        table.string("validationHash", 80).nullable()
-        table.string("resetPwdHash", 80).nullable()
-        table.timestamp("validationExpires").nullable()
-        table.timestamp("resetPwdExpires").nullable()
-        table.timestamp("lastRequest").nullable()
-      })
-    }
+    await this._knex.transaction(async trx => {
+      if (!(await trx.schema.hasTable(this.userTableName))) {
+        await trx.schema.createTable(this.userTableName, table => {
+          table.increments()
+          table.string("email", 30)
+          table.string("username", 30).unique()
+          table.string("auth", 80)
+          table.string("validationHash", 80).nullable()
+          table.string("resetPwdHash", 80).nullable()
+          table.timestamp("validationExpires").nullable()
+          table.timestamp("resetPwdExpires").nullable()
+          table.timestamp("lastRequest").nullable()
+        })
+      }
+
+      if (this.ctx.database._oldFwVersion < 2) {
+        await trx.schema.alterTable(this.userTableName, table => {
+          table.string("username", 30).unique()
+        })
+        await trx.table(this.userTableName).update({
+          username: trx.raw("??", ["email"])
+        })
+        await trx.schema.alterTable(this.userTableName, table => {
+          table.dropIndex(["email"], "user_email_unique")
+          table.unique(["username"], "username_unique")
+        })
+      }
+    })
   }
 
   async routineCleanup() {
