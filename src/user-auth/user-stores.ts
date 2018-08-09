@@ -50,7 +50,6 @@ export class KnexStore extends UserStore {
         await trx.schema.createTable(this.userTableName, table => {
           table.increments()
           table.string("email", 30)
-          table.string("username", 30).unique()
           table.string("auth", 80)
           table.string("validationHash", 80).nullable()
           table.string("resetPwdHash", 80).nullable()
@@ -69,7 +68,6 @@ export class KnexStore extends UserStore {
         })
         await trx.schema.alterTable(this.userTableName, table => {
           table.dropIndex(["email"], "user_email_unique")
-          table.unique(["username"], "username_unique")
         })
       }
     })
