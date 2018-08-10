@@ -9,6 +9,7 @@ import { RequestHandler } from "express"
 import { timedQueueMw } from "./timed-queue"
 
 const createUserSchema = Yup.object({
+  username: Yup.string().required(),
   email: Yup.string()
     .email()
     .required(),
@@ -84,16 +85,16 @@ export class UserAuth {
     await this.userStore.routineCleanup()
   }
 
-  private async checkAndUpdateUserRequestCap(email: string, seconds: number) {
-    if (!email) throw Error("Invalid input.")
-    let lastReq = await this.userStore.getLastRequest(email)
+  private async checkAndUpdateUserRequestCap(userId: number, seconds: number) {
+    if (!userId) throw Error("Invalid input.")
+    let lastReq = await this.userStore.getLastRequest(userId)
     if (
       !lastReq ||
       day(lastReq)
         .add(seconds, "second")
         .isBefore(day())
     ) {
-      await this.userStore.writeLastRequest(email, new Date())
+      await this.userStore.writeLastRequest(userId)
       return
     } else {
       throw Error("Try again in a few seconds.")
@@ -112,6 +113,7 @@ export class UserAuth {
       : null
 
     let pkey = await this.userStore.writeNewUser({
+      username: inp.username,
       email: inp.email,
       auth: pwdHash,
       validationHash,
@@ -140,7 +142,7 @@ export class UserAuth {
     }
   }
 
-  async validate(hash: string): Promise<User> {
+  async validateHash(hash: string): Promise<User> {
     if (!hash) throw Error("Invalid hash.")
     const found = await this.userStore.queryUserByValidationHash(hash)
     if (!found) throw Error("Invalid hash.")
@@ -148,20 +150,30 @@ export class UserAuth {
     return { id: found.id, email: found.email }
   }
 
-  async find(inp: SchemaType<typeof createUserSchema>): Promise<User | undefined> {
-    createUserSchema.validateSync(inp, { strict: true })
-    const user = await this.userStore.queryUserByEmail(inp.email)
+  async validateLogin(inp: { username: string; password: string }): Promise<User | undefined> {
+    const schema = Yup.object({
+      username: Yup.string()
+        .min(4)
+        .required(),
+      password: Yup.string()
+        .min(6)
+        .required()
+    })
+    schema.validateSync(inp)
+    const user = await this.userStore.queryUserByName(inp.username)
     if (!user) return undefined
     const check = await this.bcrypt.compare(inp.password, user.auth!)
     if (user.validationHash) throw Error("User needs to validate his email first.")
-    return check ? { id: user.id, email: user.email } : undefined
+    return check ? user : undefined
   }
 
   async createResetPwdRequest(inp: SchemaType<typeof emailSchema>) {
     emailSchema.validateSync(inp)
     const requestId = uuid()
+    const user = await this.userStore.queryUserByEmail(inp.email)
+    if (!user) throw Error("User not found.")
     const storeId = this.userStore.writeResetPwdRequest(
-      inp.email,
+      user.id,
       requestId,
       day()
         .add(2, "hour")
@@ -246,12 +258,17 @@ export class UserAuth {
         middleware: [queues.createUser],
         validation: {
           body: yup.object({
-            newUserEmail: yup.string().email(),
+            newUsername: yup.string().required(),
+            newUserEmail: yup
+              .string()
+              .email()
+              .required(),
             newUserPwd: yup.string().min(6)
           })
         }
       }).handler(async req => {
         await User.create({
+          username: req.body.newUsername,
           email: req.body.newUserEmail,
           password: req.body.newUserPwd
         })
@@ -262,17 +279,18 @@ export class UserAuth {
         middleware: [queues.login],
         validation: {
           body: yup.object({
-            existingUserEmail: yup.string().email(),
+            existingUsername: yup.string().email(),
             existingUserPwd: yup.string().min(6)
           })
         }
       }).handler(async req => {
-        await this.checkAndUpdateUserRequestCap(
-          req.body.existingUserEmail,
-          this._getPerUserWaitTime().login
-        )
-        const user = await User.find({
-          email: req.body.existingUserEmail,
+        const user = await this.userStore.queryUserByName(req.body.existingUsername)
+        if (!user) {
+          throw ono({ statusCode: 401 }, "Could not authenticate with what you entered.")
+        }
+        await this.checkAndUpdateUserRequestCap(user.id, this._getPerUserWaitTime().login)
+        const found = await User.validateLogin({
+          username: req.body.existingUsername,
           password: req.body.existingUserPwd
         })
         if (!user) {
@@ -286,8 +304,10 @@ export class UserAuth {
         middleware: [queues.requestReset],
         validation: { body: yup.object({ email: yup.string().email() }) }
       }).handler(async req => {
+        const user = await this.userStore.queryUserByEmail(req.body.email)
+        if (!user) throw Error("Not found.")
         await this.checkAndUpdateUserRequestCap(
-          req.body.email,
+          user.id,
           this._getPerUserWaitTime().requestPasswordReset
         )
         await User.createResetPwdRequest({ email: req.body.email })
@@ -323,7 +343,7 @@ export class UserAuth {
           this._validateRoute(),
           RouterBuilder.createHandler(async (req, res) => {
             const hash = req.query.seq
-            let user = await User.validate(hash)
+            let user = await User.validateHash(hash)
             req.nextpressAuth.setUser({ id: user.id, email: user.email })
             return this._renderSimpleMessage(
               routerBuilder.server,
