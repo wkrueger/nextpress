@@ -52,8 +52,12 @@ export class KnexStore extends UserStore {
       if (!(await trx.schema.hasTable(this.userTableName))) {
         await trx.schema.createTable(this.userTableName, table => {
           table.increments()
-          table.string("email", 30).unique()
-          table.string("auth", 80)
+          table
+            .string("email", 30)
+            .unique()
+            .notNullable()
+          table.string("auth", 80).notNullable()
+          //
           table.string("validationHash", 80).nullable()
           table.string("resetPwdHash", 80).nullable()
           table.timestamp("validationExpires").nullable()
@@ -64,7 +68,10 @@ export class KnexStore extends UserStore {
 
       if (this.ctx.database._oldFwVersion < 2) {
         await trx.schema.alterTable(this.userTableName, table => {
-          table.string("username", 30).unique()
+          table
+            .string("username", 30)
+            .unique()
+            .notNullable()
         })
         await trx.table(this.userTableName).update({
           username: trx.raw("??", ["email"])

@@ -28,7 +28,7 @@ export class Server {
     useSession: true,
     useJwt: false,
     jwtOptions: {
-      tokenHeader: "X-Auth-Token",
+      tokenHeader: "authorization",
       tokenDuration: 60 * 60 * 12 * 5 //5 days
     },
     bundleAnalyzer: {
@@ -227,15 +227,14 @@ class UserAuthJwt implements UserAuthSession {
 
   async getUser() {
     if (this._user) return this._user
-    const token: string = this.req.headers[this.opts.headerKey]
-    if (!token) return undefined
+    const token: string = this.req.headers[this.opts.headerKey.toLowerCase()]
+    if (!token || token === "undefined") return undefined
     const decoded = await new Promise<any>((resolve, reject) => {
       jwt.verify(token, this.opts.secret, (err, resp) => {
         if (err) return reject(err)
         return resolve(resp)
       })
     })
-    console.log("decoded", decoded)
     return decoded
   }
 

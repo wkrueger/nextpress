@@ -5,7 +5,7 @@ import { Server } from "../server"
 import day = require("dayjs")
 import { RouterBuilder } from "../server/router-builder"
 import { UserStore, KnexStore } from "./user-stores"
-import { RequestHandler } from "express"
+import { RequestHandler, Request } from "express"
 import { timedQueueMw } from "./timed-queue"
 
 const createUserSchema = Yup.object({
@@ -74,6 +74,10 @@ export class UserAuth {
   sendMail? = this.ctx.email && this.ctx.email.sendMail
   userStore!: UserStore
 
+  options = {
+    skipNewUserValidation: false
+  }
+
   async init() {
     if (!this.userStore) {
       throw Error(
@@ -102,6 +106,9 @@ export class UserAuth {
   }
 
   async create(inp: SchemaType<typeof createUserSchema>, opts = { askForValidation: true }) {
+    if (this.options.skipNewUserValidation) {
+      opts.askForValidation = false
+    }
     createUserSchema.validateSync(inp, { strict: true })
     const pwdHash = await this.bcrypt.hash(inp.password, 10)
     const validationHash = opts.askForValidation ? uuid() : null
@@ -140,6 +147,8 @@ export class UserAuth {
         throw err
       }
     }
+
+    return pkey
   }
 
   async validateHash(hash: string): Promise<User> {
@@ -250,6 +259,32 @@ export class UserAuth {
     }
   }
 
+  async loginRoute(
+    { username, password }: { username: string; password: string },
+    setUser: (u: User) => Promise<string>
+  ) {
+    const user = await this.userStore.queryUserByName(username)
+    if (!user) {
+      throw ono(
+        { statusCode: 401, code: "UNAUTHORIZED" },
+        "Could not authenticate with what you entered."
+      )
+    }
+    await this.checkAndUpdateUserRequestCap(user.id, this._getPerUserWaitTime().login)
+    const found = await this.validateLogin({
+      username,
+      password
+    })
+    if (!found) {
+      throw ono(
+        { statusCode: 401, code: "UNAUTHORIZED" },
+        "Could not authenticate with what you entered."
+      )
+    }
+    const token = await setUser({ email: user.email, id: user.id })
+    return { status: "OK", token }
+  }
+
   async userRoutes(routerBuilder: RouterBuilder) {
     const User = this
     const queues = this._getRequestThrottleMws()
@@ -279,25 +314,18 @@ export class UserAuth {
         middleware: [queues.login],
         validation: {
           body: yup.object({
-            existingUsername: yup.string().email(),
-            existingUserPwd: yup.string().min(6)
+            username: yup.string().required(),
+            password: yup
+              .string()
+              .min(6)
+              .required()
           })
         }
       }).handler(async req => {
-        const user = await this.userStore.queryUserByName(req.body.existingUsername)
-        if (!user) {
-          throw ono({ statusCode: 401 }, "Could not authenticate with what you entered.")
-        }
-        await this.checkAndUpdateUserRequestCap(user.id, this._getPerUserWaitTime().login)
-        const found = await User.validateLogin({
-          username: req.body.existingUsername,
-          password: req.body.existingUserPwd
-        })
-        if (!user) {
-          throw ono({ statusCode: 401 }, "Could not authenticate with what you entered.")
-        }
-        const token = await req.nextpressAuth.setUser({ email: user.email, id: user.id })
-        return { status: "OK", token }
+        return this.loginRoute(
+          { username: req.body.username, password: req.body.password },
+          req.nextpressAuth.setUser.bind(req.nextpressAuth)
+        )
       }),
 
       "/request-password-reset": route({

@@ -1,0 +1,4 @@
+  - tests
+  - docusaurus
+  - tear apart site + api (and easy tests for them)
+  - hmr for website

@@ -31,6 +31,9 @@ export declare class RouterBuilder {
     }) => Promise<void>): Promise<import("express-serve-static-core").Router>;
     opinionatedJsonRouter<Dict extends Record<string, RouteOpts>>(setup: (i: typeof RouteDictHelper) => Dict): Promise<import("express-serve-static-core").Router>;
     jsonErrorHandler: expressMod.ErrorRequestHandler;
+    route: <Opts extends RouteOpts>(opts?: Opts) => {
+        handler: (fn: HandlerType<Opts>) => RouteOpts;
+    };
 }
 export declare type Omit<T, K> = Pick<T, Exclude<keyof T, K>>;
 interface EditedRequestHandler<Replace = {}> {
@@ -50,6 +53,9 @@ declare type NeverParams = {
 declare type HandlerType<Opts> = Opts extends {
     validation: any;
 } ? EditedRequestHandler<UnwrapSchemaDict<Opts["validation"]>> : EditedRequestHandler<NeverParams>;
+export declare const route: <Opts extends RouteOpts>(opts?: Opts) => {
+    handler: (fn: HandlerType<Opts>) => RouteOpts;
+};
 declare const RouteDictHelper: {
     route: <Opts extends RouteOpts>(opts?: Opts) => {
         handler: (fn: HandlerType<Opts>) => RouteOpts;

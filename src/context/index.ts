@@ -49,7 +49,7 @@ export function ContextFactory(i: {
   }
   for (let x = 0; x < required.length; x++) {
     const key = required[x]
-    if (!process.env[key]) throw Error(`Required env key ${key} not defined.`)
+    if (process.env[key] === undefined) throw Error(`Required env key ${key} not defined.`)
   }
   const getKey = (key: string) => process.env[prefixUpper + key]
   const pluginContext = (i.mappers || []).reduce(

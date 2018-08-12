@@ -116,6 +116,8 @@ export class RouterBuilder {
       next(err)
     }
   }
+
+  route = route
 }
 
 export type Omit<T, K> = Pick<T, Exclude<keyof T, K>>
@@ -137,7 +139,7 @@ type HandlerType<Opts> = Opts extends { validation: any }
   ? EditedRequestHandler<UnwrapSchemaDict<Opts["validation"]>>
   : EditedRequestHandler<NeverParams>
 
-const route = <Opts extends RouteOpts>(opts: Opts = {} as any) => {
+export const route = <Opts extends RouteOpts>(opts: Opts = {} as any) => {
   return {
     handler: (fn: HandlerType<Opts>): RouteOpts => {
       return Object.assign(opts, { handler: fn })

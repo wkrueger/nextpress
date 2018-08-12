@@ -4,6 +4,7 @@ import { RouterBuilder } from "../server/router-builder";
 import { UserStore } from "./user-stores";
 import { RequestHandler } from "express";
 declare const createUserSchema: Yup.ObjectSchema<{
+    username: string;
     email: string;
     password: string;
 }>;
@@ -36,13 +37,19 @@ export declare class UserAuth {
         html: string;
     }) => Promise<any>) | undefined;
     userStore: UserStore;
+    options: {
+        skipNewUserValidation: boolean;
+    };
     init(): Promise<void>;
     private checkAndUpdateUserRequestCap;
     create(inp: SchemaType<typeof createUserSchema>, opts?: {
         askForValidation: boolean;
-    }): Promise<void>;
-    validate(hash: string): Promise<User>;
-    find(inp: SchemaType<typeof createUserSchema>): Promise<User | undefined>;
+    }): Promise<number>;
+    validateHash(hash: string): Promise<User>;
+    validateLogin(inp: {
+        username: string;
+        password: string;
+    }): Promise<User | undefined>;
     createResetPwdRequest(inp: SchemaType<typeof emailSchema>): Promise<void>;
     findResetPwdRequest(inp: SchemaType<typeof requestIdSchema>): Promise<boolean>;
     performResetPwd(inp: SchemaType<typeof pwdRequestSchema>): Promise<void>;
@@ -66,6 +73,13 @@ export declare class UserAuth {
         login: number;
         requestPasswordReset: number;
     };
+    loginRoute({ username, password }: {
+        username: string;
+        password: string;
+    }, setUser: (u: User) => Promise<string>): Promise<{
+        status: string;
+        token: string;
+    }>;
     userRoutes(routerBuilder: RouterBuilder): Promise<{
         json: import("express-serve-static-core").Router;
         html: import("express-serve-static-core").Router;
