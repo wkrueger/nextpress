@@ -152,7 +152,9 @@ const validateRequest = (opts: RouteOpts, req: expressMod.Request) => {
   const what = opts.validation
   if (what.query) req.query = what.query.validateSync(req.query)
   if (what.params) req.params = what.params.validateSync(req.params)
-  if (what.body) req.body = what.body.validateSync(req.body)
+  if (what.body) {
+    req.body = what.body.validateSync(req.body, { stripUnknown: true })
+  }
 }
 
 const RouteDictHelper = {

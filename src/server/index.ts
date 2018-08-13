@@ -67,9 +67,9 @@ export class Server {
     await this.setupGlobalMiddleware(expressApp)
     await this.setupRoutes({ app: expressApp })
     return new Promise(resolve => {
-      expressApp.listen(this.ctx.website.port, () => {
+      const nodeServer = expressApp.listen(this.ctx.website.port, () => {
         console.log("Server running on " + this.ctx.website.port)
-        resolve()
+        resolve(nodeServer)
       })
     })
   }

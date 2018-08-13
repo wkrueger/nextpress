@@ -2,3 +2,4 @@
   - docusaurus
   - tear apart site + api (and easy tests for them)
   - hmr for website
+  - investigate RPC for API servers
