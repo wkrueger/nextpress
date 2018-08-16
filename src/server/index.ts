@@ -230,8 +230,11 @@ class UserAuthJwt implements UserAuthSession {
     const token: string = this.req.headers[this.opts.headerKey.toLowerCase()]
     if (!token || token === "undefined") return undefined
     const decoded = await new Promise<any>((resolve, reject) => {
-      jwt.verify(token, this.opts.secret, (err, resp) => {
-        if (err) return reject(err)
+      jwt.verify(token, this.opts.secret, (err: any, resp) => {
+        if (err) {
+          err.statusCode = 401
+          return reject(err)
+        }
         return resolve(resp)
       })
     })
