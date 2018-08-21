@@ -188,7 +188,8 @@ export class KnexStore extends UserStore {
 
   async queryUserByName(username: string) {
     let out = await this.userTable()
-      .select(...this.fields)
+      //.select(...this.fields)
+      .select()
       .where({ username })
     return out[0]
   }

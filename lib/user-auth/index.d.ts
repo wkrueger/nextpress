@@ -76,7 +76,10 @@ export declare class UserAuth {
     loginRoute({ username, password }: {
         username: string;
         password: string;
-    }, setUser: (u: User) => Promise<string>): Promise<{
+    }, setUser: (u: User) => Promise<string>, mapUser?: (u: User) => {
+        email: string;
+        id: number;
+    }): Promise<{
         status: string;
         token: string;
     }>;

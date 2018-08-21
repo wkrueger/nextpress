@@ -261,7 +261,8 @@ export class UserAuth {
 
   async loginRoute(
     { username, password }: { username: string; password: string },
-    setUser: (u: User) => Promise<string>
+    setUser: (u: User) => Promise<string>,
+    mapUser = (u: User) => ({ email: u.email, id: u.id })
   ) {
     const user = await this.userStore.queryUserByName(username)
     if (!user) {
@@ -281,7 +282,7 @@ export class UserAuth {
         "Could not authenticate with what you entered."
       )
     }
-    const token = await setUser({ email: user.email, id: user.id })
+    const token = await setUser(mapUser(found))
     return { status: "OK", token }
   }
 

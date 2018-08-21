@@ -29,7 +29,7 @@ export class Server {
     useJwt: false,
     jwtOptions: {
       tokenHeader: "authorization",
-      tokenDuration: 60 * 60 * 12 * 5 //5 days
+      tokenDuration: 60 * 60 * 24 * 5 //5 days
     },
     bundleAnalyzer: {
       analyzeServer: false,
