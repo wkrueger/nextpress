@@ -11,6 +11,7 @@ export declare const websiteContext: {
             sessionSecret: string;
             logRequests: boolean;
             bundleAnalyzer: boolean;
+            useCompression: boolean;
         };
     };
 };
