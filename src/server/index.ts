@@ -58,6 +58,9 @@ export class Server {
     const nextBuild = require("next/dist/build").default
     await promisify(rimraf)(resolve(this.ctx.projectRoot, ".next"))
     await nextBuild(this.ctx.projectRoot, this.getNextjsConfig())
+    if (global.gc) {
+      global.gc()
+    }    
   }
 
   /**
