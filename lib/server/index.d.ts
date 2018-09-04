@@ -11,7 +11,6 @@ export declare class Server {
         useNextjs: boolean;
         useSession: boolean;
         useJwt: boolean;
-        buildOnly: boolean;
         jwtOptions: {
             tokenHeader: string;
             tokenDuration: number;
@@ -23,10 +22,11 @@ export declare class Server {
     };
     private _nextApp?;
     getNextApp(): NextServer;
+    buildForProduction(): Promise<void>;
     /**
      * all set, run
      */
-    run(): Promise<{} | undefined>;
+    run(): Promise<{}>;
     /**
      * this is meant to be overriden in order to set the server routes.
      */

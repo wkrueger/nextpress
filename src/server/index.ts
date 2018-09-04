@@ -27,7 +27,6 @@ export class Server {
     useNextjs: true,
     useSession: true,
     useJwt: false,
-    buildOnly: false,
     jwtOptions: {
       tokenHeader: "authorization",
       tokenDuration: 60 * 60 * 24 * 5, //5 days
@@ -54,17 +53,20 @@ export class Server {
     return this._nextApp
   }
 
+  async buildForProduction() {
+    console.log("Building for production...")
+    const nextBuild = require("next/dist/build").default
+    await promisify(rimraf)(resolve(this.ctx.projectRoot, ".next"))
+    await nextBuild(this.ctx.projectRoot, this.getNextjsConfig())
+  }
+
   /**
    * all set, run
    */
   async run() {
     if (this.isProduction && this.options.useNextjs) {
-      console.log("Production mode. Building...")
-      const nextBuild = require("next/dist/build").default
-      await promisify(rimraf)(resolve(this.ctx.projectRoot, ".next"))
-      await nextBuild(this.ctx.projectRoot, this.getNextjsConfig())
+      await this.buildForProduction()
     }
-    if (this.options.buildOnly) return
     const expressApp = expressMod()
     await this.setupGlobalMiddleware(expressApp)
     await this.setupRoutes({ app: expressApp })
