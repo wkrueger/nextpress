@@ -27,6 +27,7 @@ export class Server {
     useNextjs: true,
     useSession: true,
     useJwt: false,
+    useHelmet: true,
     jwtOptions: {
       tokenHeader: "authorization",
       tokenDuration: 60 * 60 * 24 * 5, //5 days
@@ -60,7 +61,7 @@ export class Server {
     await nextBuild(this.ctx.projectRoot, this.getNextjsConfig())
     if (global.gc) {
       global.gc()
-    }    
+    }
   }
 
   /**
@@ -116,7 +117,9 @@ export class Server {
     expressApp.get("/robots.txt", (_, response) => {
       response.sendFile(robotsPath)
     })
-    expressApp.use(helmet())
+    if (this.options.useHelmet) {
+      expressApp.use(helmet())
+    }
     return expressApp
   }
 

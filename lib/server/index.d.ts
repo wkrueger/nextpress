@@ -11,6 +11,7 @@ export declare class Server {
         useNextjs: boolean;
         useSession: boolean;
         useJwt: boolean;
+        useHelmet: boolean;
         jwtOptions: {
             tokenHeader: string;
             tokenDuration: number;
