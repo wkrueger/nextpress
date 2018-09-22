@@ -8,7 +8,7 @@ export class RouterBuilder {
   constructor(public server: Server) {}
 
   static yup = yup
-  static polka = expressMod
+  static express = expressMod
 
   /**
    * Wraps request handler in try/catch/next
@@ -16,7 +16,7 @@ export class RouterBuilder {
   static createHandler = (fn: expressMod.RequestHandler): expressMod.RequestHandler => async (
     req,
     res,
-    next
+    next,
   ) => {
     try {
       await fn(req, res, next)
@@ -27,15 +27,22 @@ export class RouterBuilder {
 
   static appendJsonRoutesFromDict<Dict extends Record<string, RouteOpts>>(
     router: expressMod.Router,
-    setup: (i: typeof RouteDictHelper) => Dict
+    setup: (i: typeof RouteDictHelper) => Dict,
   ) {
     const routeDict = setup(RouteDictHelper)
     Object.keys(routeDict).forEach(key => {
       let routeOpts = routeDict[key]
       let method: "get" | "post" | "put" | "delete" = routeOpts.method || ("post" as any)
       let mw = routeOpts.middleware || []
+      if (routeOpts.validation) {
+        mw.push(validateRequest(routeOpts.validation))
+      }
+      mw.sort((a, b) => {
+        if (a.priority! < b.priority!) return -1
+        if (a.priority! > b.priority!) return 1
+        return 0
+      })
       let fn: expressMod.RequestHandler = async (req, res) => {
-        validateRequest(routeOpts, req)
         let result = await routeOpts.handler!(req)
         res.send(result)
       }
@@ -56,7 +63,7 @@ export class RouterBuilder {
    */
   async createHtmlRouter(
     callback?: ({ router }: { router: expressMod.Router }) => Promise<void>,
-    options: { noNextJs?: boolean } = {}
+    options: { noNextJs?: boolean } = {},
   ) {
     const router = expressMod.Router()
     if (callback) {
@@ -65,7 +72,7 @@ export class RouterBuilder {
     if (this.server.options.errorRoute) {
       const errorMw: expressMod.ErrorRequestHandler = (err, req, res, next) => {
         this.server.getNextApp().render(req, res, this.server.options.errorRoute, {
-          message: String(err)
+          message: String(err),
         })
       }
       router.use(errorMw)
@@ -92,7 +99,7 @@ export class RouterBuilder {
   }
 
   async opinionatedJsonRouter<Dict extends Record<string, RouteOpts>>(
-    setup: (i: typeof RouteDictHelper) => Dict
+    setup: (i: typeof RouteDictHelper) => Dict,
   ) {
     return this.createJsonRouter(async ({ router }) => {
       return RouterBuilder.appendJsonRoutesFromDict(router, setup)
@@ -128,7 +135,7 @@ interface EditedRequestHandler<Replace = {}> {
 
 interface RouteOpts {
   method?: string
-  middleware?: expressMod.RequestHandler[]
+  middleware?: PriorityRequestHandler[]
   validation?: SchemaDict
   handler?: Function
 }
@@ -143,23 +150,38 @@ export const route = <Opts extends RouteOpts>(opts: Opts = {} as any) => {
   return {
     handler: (fn: HandlerType<Opts>): RouteOpts => {
       return Object.assign(opts, { handler: fn })
-    }
+    },
   }
 }
 
-const validateRequest = (opts: RouteOpts, req: expressMod.Request) => {
-  if (!opts.validation) return
-  const what = opts.validation
-  if (what.query) req.query = what.query.validateSync(req.query)
-  if (what.params) req.params = what.params.validateSync(req.params)
-  if (what.body) {
-    req.body = what.body.validateSync(req.body, { stripUnknown: true })
+export interface PriorityRequestHandler extends expressMod.RequestHandler {
+  priority?: number
+}
+
+export const validateRequest = (opts: RouteOpts["validation"]) => {
+  const mw: PriorityRequestHandler = (req, _res, next) => {
+    try {
+      const what = opts!
+      if (what.query) {
+        req.query = what.query.validateSync(req.query)
+      }
+      if (what.params) {
+        req.params = what.params.validateSync(req.params)
+      }
+      if (what.body) {
+        req.body = what.body.validateSync(req.body, { stripUnknown: true })
+      }
+    } catch (err) {
+      next(err)
+    }
   }
+  mw.priority = 100
+  return mw
 }
 
 const RouteDictHelper = {
   route,
-  yup
+  yup,
 }
 
 type UnwrapSchema<T> = T extends yup.ObjectSchema<infer R> ? R : unknown

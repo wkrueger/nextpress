@@ -5,7 +5,7 @@ export declare class RouterBuilder {
     server: Server;
     constructor(server: Server);
     static yup: typeof yup;
-    static polka: typeof expressMod;
+    static express: typeof expressMod;
     /**
      * Wraps request handler in try/catch/next
      */
@@ -41,7 +41,7 @@ interface EditedRequestHandler<Replace = {}> {
 }
 interface RouteOpts {
     method?: string;
-    middleware?: expressMod.RequestHandler[];
+    middleware?: PriorityRequestHandler[];
     validation?: SchemaDict;
     handler?: Function;
 }
@@ -56,6 +56,10 @@ declare type HandlerType<Opts> = Opts extends {
 export declare const route: <Opts extends RouteOpts>(opts?: Opts) => {
     handler: (fn: HandlerType<Opts>) => RouteOpts;
 };
+export interface PriorityRequestHandler extends expressMod.RequestHandler {
+    priority?: number;
+}
+export declare const validateRequest: (opts: SchemaDict | undefined) => PriorityRequestHandler;
 declare const RouteDictHelper: {
     route: <Opts extends RouteOpts>(opts?: Opts) => {
         handler: (fn: HandlerType<Opts>) => RouteOpts;
