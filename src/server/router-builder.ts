@@ -106,7 +106,12 @@ export class RouterBuilder {
     })
   }
 
-  jsonErrorHandler: expressMod.ErrorRequestHandler = (err, req, res, next) => {
+  jsonErrorHandler(
+    err: any,
+    _req: expressMod.Request,
+    res: expressMod.Response,
+    next: expressMod.NextFunction,
+  ) {
     try {
       console.error(err)
       if (err.sql && !err.statusCode) {
@@ -171,6 +176,7 @@ export const validateRequest = (opts: RouteOpts["validation"]) => {
       if (what.body) {
         req.body = what.body.validateSync(req.body, { stripUnknown: true })
       }
+      next()
     } catch (err) {
       next(err)
     }
