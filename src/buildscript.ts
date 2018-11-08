@@ -20,7 +20,7 @@ export function buildscript(projectRoot: string) {
       checkNCreate(["tsconfig.json"], () => JSON.stringify(clientTsConfig, null, 2))
       checkNCreate([".gitignore"], () => loadScaffoldFile("gitignore.scaff.txt"))
       checkNCreate(["pages", "client-global.d.ts"], () =>
-        loadScaffoldFile("client-global-types.txt")
+        loadScaffoldFile("client-global-types.txt"),
       )
       checkNCreate(["pages", "_document.tsx"], () => loadScaffoldFile("_document.txt"))
       checkNCreate([".vscode", "launch.json"], () => loadScaffoldFile("vscode-launch.txt"))
@@ -32,16 +32,21 @@ export function buildscript(projectRoot: string) {
       const pjspath = resolve(projectRoot, "package.json")
       const packagejson = require(pjspath)
       packagejson.scripts = packagejson.scripts || {}
-      packagejson.scripts.testServer =
-        packagejson.scripts.testServer || 'jest -c="jest.server.config.js"'
-      packagejson.scripts.testClient =
-        packagejson.scripts.testClient || 'jest -c="jest.client.config.js"'
+
+      packagejson.scripts = Object.assign({}, packagejson.scripts, {
+        compileWithoutErrors: "tsc -p ./server || exit 0",
+        postinstall: "yarn run compileWithoutErrors",
+        dev: "yarn run compileWithoutErrors && node ./.nextpress/index",
+        start: "node ./.nextpress/index",
+        testServer: 'jest -c="jest.server.config.js"',
+        testClient: 'jest -c="jest.client.config.js"',
+      })
       fs.writeFileSync(pjspath, JSON.stringify(packagejson, null, 2))
     },
 
     async compileServer() {
       await build.spawn(`${tsPath} -p ${relativeTo(serverTsConfigPath)} -w`)
-    }
+    },
   }
 
   return {
@@ -49,7 +54,7 @@ export function buildscript(projectRoot: string) {
       build.runTask(tasks)
     },
     tool: build,
-    tasks
+    tasks,
   }
 
   function checkNCreate(paths: string[], content: () => string | Buffer) {
@@ -89,10 +94,10 @@ const serverTsconfig = {
     strict: true,
     noUnusedLocals: true,
     sourceMap: true,
-    pretty: false
+    pretty: false,
   },
   include: ["."],
-  exclude: ["__tests__"]
+  exclude: ["__tests__"],
 }
 
 const clientTsConfig = {
@@ -108,7 +113,7 @@ const clientTsConfig = {
     sourceMap: false,
     esModuleInterop: true,
     experimentalDecorators: true,
-    downlevelIteration: true
+    downlevelIteration: true,
   },
-  include: ["pages", "app"]
+  include: ["pages", "app"],
 }

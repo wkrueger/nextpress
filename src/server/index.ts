@@ -209,7 +209,7 @@ interface User {
   email: string
 }
 
-class UserAuthSession {
+export class UserAuthSession {
   constructor(public req: any) {}
 
   async getUser(): Promise<User | undefined> {
@@ -231,7 +231,7 @@ class UserAuthSession {
   }
 }
 
-class UserAuthJwt implements UserAuthSession {
+export class UserAuthJwt implements UserAuthSession {
   constructor(
     public req: any,
     private opts: { headerKey: string; secret: string; durationSeconds: number },

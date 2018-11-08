@@ -48,14 +48,14 @@ interface User {
     id: number;
     email: string;
 }
-class UserAuthSession {
+export declare class UserAuthSession {
     req: any;
     constructor(req: any);
     getUser(): Promise<User | undefined>;
     setUser(user: User): Promise<string>;
     logout(): Promise<void>;
 }
-class UserAuthJwt implements UserAuthSession {
+export declare class UserAuthJwt implements UserAuthSession {
     req: any;
     private opts;
     constructor(req: any, opts: {
