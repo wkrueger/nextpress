@@ -3,7 +3,7 @@ import { v4 as uuid } from "uuid"
 import ono = require("ono")
 import { Server } from "../server"
 import day = require("dayjs")
-import { RouterBuilder } from "../server/router-builder"
+import { RouterBuilder, RouteDictHelper } from "../server/router-builder"
 import { UserStore, KnexStore } from "./user-stores"
 import { RequestHandler, Request } from "express"
 import { timedQueueMw } from "./timed-queue"
@@ -288,7 +288,7 @@ export class UserAuth {
     return { status: "OK", token }
   }
 
-  userJsonMethods: FirstArg<RouterBuilder["rpcishJsonRouter"]> = helper => {
+  userJsonMethods(helper: typeof RouteDictHelper) {
     const queues = this._getRequestThrottleMws()
     const { route, yup } = helper
     const User = this
@@ -372,7 +372,7 @@ export class UserAuth {
 
   async userRoutes(routerBuilder: RouterBuilder) {
     const User = this
-    const json = await routerBuilder.rpcishJsonRouter(this.userJsonMethods)
+    const json = await routerBuilder.rpcishJsonRouter(this.userJsonMethods.bind(this))
 
     const html = await routerBuilder.createHtmlRouter(
       async ({ router }) => {

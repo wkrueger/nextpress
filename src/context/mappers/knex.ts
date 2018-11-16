@@ -13,7 +13,7 @@ export const knexContext = createContextMapper({
         name: getKey("DB_NAME")!,
         user: getKey("DB_USER")!,
         password: getKey("DB_PASS")!,
-        _currentFwVersion: 2,
+        _currentFwVersion: 3,
         _oldFwVersion: 0,
         _db: (undefined as any) as knex,
 

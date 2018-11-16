@@ -39,7 +39,7 @@ export declare type Omit<T, K> = Pick<T, Exclude<keyof T, K>>;
 interface EditedRequestHandler<Replace = {}> {
     (req: Omit<expressMod.Request, keyof Replace> & Replace): Promise<Record<string, any>>;
 }
-interface RouteOpts {
+export interface RouteOpts {
     method?: string;
     middleware?: PriorityRequestHandler[];
     validation?: SchemaDict;
@@ -60,7 +60,7 @@ export interface PriorityRequestHandler extends expressMod.RequestHandler {
     priority?: number;
 }
 export declare const validateRequest: (opts: SchemaDict | undefined) => PriorityRequestHandler;
-declare const RouteDictHelper: {
+export declare const RouteDictHelper: {
     route: <Opts extends RouteOpts>(opts?: Opts) => {
         handler: (fn: HandlerType<Opts>) => RouteOpts;
     };

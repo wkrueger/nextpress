@@ -138,7 +138,7 @@ interface EditedRequestHandler<Replace = {}> {
   (req: Omit<expressMod.Request, keyof Replace> & Replace): Promise<Record<string, any>>
 }
 
-interface RouteOpts {
+export interface RouteOpts {
   method?: string
   middleware?: PriorityRequestHandler[]
   validation?: SchemaDict
@@ -185,7 +185,7 @@ export const validateRequest = (opts: RouteOpts["validation"]) => {
   return mw
 }
 
-const RouteDictHelper = {
+export const RouteDictHelper = {
   route,
   yup
 }

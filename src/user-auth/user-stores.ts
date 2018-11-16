@@ -41,7 +41,7 @@ export class KnexStore extends UserStore {
   _knex = this.ctx.database.db()
 
   userTableName = "user"
-  fields = ["id", "email", "username", "lastRequest", "auth", "validationHash"]
+  fields = ["id", "email", "username", "lastRequest", "auth", "validationHash", "displayName"]
 
   userTable() {
     return this._knex(this.userTableName)
@@ -75,6 +75,12 @@ export class KnexStore extends UserStore {
         })
         await trx.table(this.userTableName).update({
           username: trx.raw("??", ["email"])
+        })
+      }
+
+      if (this.ctx.database._oldFwVersion < 3) {
+        await trx.schema.alterTable(this.userTableName, table => {
+          table.string("displayName", 50).nullable()
         })
       }
     })

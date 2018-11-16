@@ -1,9 +1,8 @@
 import Yup = require("yup");
 import { Server } from "../server";
-import { RouterBuilder } from "../server/router-builder";
+import { RouterBuilder, RouteDictHelper } from "../server/router-builder";
 import { UserStore } from "./user-stores";
 import { RequestHandler } from "express";
-declare type FirstArg<Fn> = Fn extends (i: infer Arg) => any ? Arg : never;
 declare const createUserSchema: Yup.ObjectSchema<{
     username: string;
     email: string;
@@ -84,7 +83,13 @@ export declare class UserAuth {
         status: string;
         token: string;
     }>;
-    userJsonMethods: FirstArg<RouterBuilder["rpcishJsonRouter"]>;
+    userJsonMethods(helper: typeof RouteDictHelper): {
+        "/createUser": import("../server/router-builder").RouteOpts;
+        "/login": import("../server/router-builder").RouteOpts;
+        "/request-password-reset": import("../server/router-builder").RouteOpts;
+        "/perform-password-reset": import("../server/router-builder").RouteOpts;
+        "/logout": import("../server/router-builder").RouteOpts;
+    };
     userRoutes(routerBuilder: RouterBuilder): Promise<{
         json: import("express-serve-static-core").Router;
         html: import("express-serve-static-core").Router;
