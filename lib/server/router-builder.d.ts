@@ -29,7 +29,7 @@ export declare class RouterBuilder {
     createJsonRouter(callback: ({ router }: {
         router: expressMod.Router;
     }) => Promise<void>): Promise<import("express-serve-static-core").Router>;
-    opinionatedJsonRouter<Dict extends Record<string, RouteOpts>>(setup: (i: typeof RouteDictHelper) => Dict): Promise<import("express-serve-static-core").Router>;
+    rpcishJsonRouter<Dict extends Record<string, RouteOpts>>(setup: (i: typeof RouteDictHelper) => Dict): Promise<import("express-serve-static-core").Router>;
     jsonErrorHandler(err: any, _req: expressMod.Request, res: expressMod.Response, next: expressMod.NextFunction): import("express-serve-static-core").Response | undefined;
     route: <Opts extends RouteOpts>(opts?: Opts) => {
         handler: (fn: HandlerType<Opts>) => RouteOpts;

@@ -3,6 +3,7 @@ import { Server } from "../server";
 import { RouterBuilder } from "../server/router-builder";
 import { UserStore } from "./user-stores";
 import { RequestHandler } from "express";
+declare type FirstArg<Fn> = Fn extends (i: infer Arg) => any ? Arg : never;
 declare const createUserSchema: Yup.ObjectSchema<{
     username: string;
     email: string;
@@ -83,6 +84,7 @@ export declare class UserAuth {
         status: string;
         token: string;
     }>;
+    userJsonMethods: FirstArg<RouterBuilder["rpcishJsonRouter"]>;
     userRoutes(routerBuilder: RouterBuilder): Promise<{
         json: import("express-serve-static-core").Router;
         html: import("express-serve-static-core").Router;

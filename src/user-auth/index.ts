@@ -8,6 +8,8 @@ import { UserStore, KnexStore } from "./user-stores"
 import { RequestHandler, Request } from "express"
 import { timedQueueMw } from "./timed-queue"
 
+type FirstArg<Fn> = Fn extends (i: infer Arg) => any ? Arg : never
+
 const createUserSchema = Yup.object({
   username: Yup.string().required(),
   email: Yup.string()
@@ -286,10 +288,11 @@ export class UserAuth {
     return { status: "OK", token }
   }
 
-  async userRoutes(routerBuilder: RouterBuilder) {
-    const User = this
+  userJsonMethods: FirstArg<RouterBuilder["rpcishJsonRouter"]> = helper => {
     const queues = this._getRequestThrottleMws()
-    const json = await routerBuilder.opinionatedJsonRouter(({ route, yup }) => ({
+    const { route, yup } = helper
+    const User = this
+    return {
       "/createUser": route({
         middleware: [queues.createUser],
         validation: {
@@ -364,7 +367,12 @@ export class UserAuth {
         if (req.nextpressAuth) await req.nextpressAuth.logout()
         return { status: "OK" }
       })
-    }))
+    }
+  }
+
+  async userRoutes(routerBuilder: RouterBuilder) {
+    const User = this
+    const json = await routerBuilder.rpcishJsonRouter(this.userJsonMethods)
 
     const html = await routerBuilder.createHtmlRouter(
       async ({ router }) => {

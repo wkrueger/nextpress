@@ -1,11 +1,11 @@
 {
   "name": "@proerd/nextpress",
-  "version": "2.0.0-dev2",
+  "version": "2.0.0-dev4",
   "main": "lib/index.js",
   "typings": "lib/index.d.ts",
   "dependencies": {
     "@proerd/buildscript": "^1.1.1",
-    "@types/bcrypt": "^2.0.0",
+    "@types/bcrypt": "*",
     "@types/dotenv": "^4.0.3",
     "@types/enzyme": "^3.1.13",
     "@types/enzyme-adapter-react-16": "^1.0.3",
@@ -60,7 +60,7 @@
     "prepublishOnly": "npm run tsc"
   },
   "peerDependencies": {
-    "bcrypt": "^2.0.1",
+    "bcrypt": "^3.0.2",
     "ioredis": "^3.2.2",
     "typescript": "^3.0.1"
   },
