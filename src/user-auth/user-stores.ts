@@ -47,7 +47,11 @@ export class KnexStore extends UserStore {
     return this._knex(this.userTableName)
   }
 
+  static initRun = false
+
   async initStore() {
+    if (KnexStore.initRun) return
+    KnexStore.initRun = true
     await this._knex.transaction(async trx => {
       if (!(await trx.schema.hasTable(this.userTableName))) {
         await trx.schema.createTable(this.userTableName, table => {
@@ -74,7 +78,7 @@ export class KnexStore extends UserStore {
             .notNullable()
         })
         await trx.table(this.userTableName).update({
-          username: trx.raw("??", ["email"])
+          username: trx.raw("??", ["email"]),
         })
       }
 
@@ -116,7 +120,7 @@ export class KnexStore extends UserStore {
     return this.userTable()
       .where({ id })
       .update({
-        lastRequest: new Date()
+        lastRequest: new Date(),
       })
   }
 
@@ -171,7 +175,7 @@ export class KnexStore extends UserStore {
       .where({ id })
       .update({
         resetPwdHash: hash,
-        resetPwdExpires: expires
+        resetPwdExpires: expires,
       })
     return ids[0]
   }
@@ -187,7 +191,7 @@ export class KnexStore extends UserStore {
     await this.userTable()
       .update({
         resetPwdHash: null,
-        auth: pwdhash
+        auth: pwdhash,
       })
       .where({ resetPwdHash: requestId })
   }
