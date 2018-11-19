@@ -117,11 +117,11 @@ const context = ContextFactory({
       optionalKeys: ["RUN_SERVICE"],
       envContext: ({ getKey }) => ({
         apiKey: getKey("BNET_API_KEY")!,
-        runService: Boolean(getKey("RUN_SERVICE"))
-      })
-    }
+        runService: Boolean(getKey("RUN_SERVICE")),
+      }),
+    },
   ],
-  projectRoot: path.resolve(__dirname, "..")
+  projectRoot: path.resolve(__dirname, ".."),
 })
 ```
 
@@ -291,7 +291,7 @@ This is shaped as an OOPish interceptor pattern with a bunch of extension points
   - `throwOnUnauthMw` (to be used on express routes behind an auth/session gate)
   - `userRoutes(opts).json` generates an express router with a set of routes from the workflow methods (all them POST + JSON). You are supposed to create your auth forms then AJAX-invoke these.
     - `/createUser` `{ newUserEmail, newUserPwd }`
-    - `/login` `{ existingUserEmail, existingUserPwd }`
+    - `/login` `{ username, password }`
     - `/request-password-reset` `{ email }`
     - `/perform-password-reset` `{ pwd1, pwd2, requestId }`
     - `/logout`

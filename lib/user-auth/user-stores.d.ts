@@ -37,6 +37,7 @@ export declare class KnexStore extends UserStore {
     userTableName: string;
     fields: string[];
     userTable(): knexMod.QueryBuilder;
+    static initRun: boolean;
     initStore(): Promise<void>;
     private _queryUserById;
     routineCleanup(): Promise<void>;
