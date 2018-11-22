@@ -162,7 +162,7 @@ export class Server {
         client: this.ctx.redis.instance(),
       })
     }
-    if (this.ctx.loadedContexts.has("default.database")) {
+    if (this.ctx.loadedContexts.has("default.knex")) {
       const knexMod = require("connect-session-knex")
       const StoreConstructor = knexMod(expressSession)
       return new StoreConstructor({
