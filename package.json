@@ -1,6 +1,6 @@
 {
   "name": "@proerd/nextpress",
-  "version": "2.0.0-dev9",
+  "version": "2.0.0-dev11",
   "main": "lib/index.js",
   "typings": "lib/index.d.ts",
   "dependencies": {
@@ -61,8 +61,7 @@
   },
   "peerDependencies": {
     "bcrypt": "^3.0.2",
-    "ioredis": "^3.2.2",
-    "typescript": "^3.0.1"
+    "ioredis": "^3.2.2"
   },
   "bin": {
     "nextpress": "./lib/cli.js"

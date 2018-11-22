@@ -1,13 +1,8 @@
 import Yup = require("yup");
 import { Server } from "../server";
 import { RouterBuilder, RouteDictHelper } from "../server/router-builder";
-import { UserStore } from "./user-stores";
+import { UserStore, BaseUser } from "./user-stores";
 import { RequestHandler } from "express";
-declare const createUserSchema: Yup.ObjectSchema<{
-    username: string;
-    email: string;
-    password: string;
-}>;
 declare const emailSchema: Yup.ObjectSchema<{
     email: string;
 }>;
@@ -19,16 +14,14 @@ declare const pwdRequestSchema: Yup.ObjectSchema<{
     pwd2: string;
     requestId: string;
 }>;
-export interface User {
-    id: number;
-    email: string;
-    auth?: string;
-    validationHash?: string;
-}
 declare type SchemaType<T> = T extends Yup.ObjectSchema<infer Y> ? Y : never;
-export declare class UserAuth {
+export declare class UserAuth<User extends BaseUser = BaseUser> {
     ctx: Nextpress.Context;
-    constructor(ctx: Nextpress.Context);
+    schema_createUser: Yup.ObjectSchema<{
+        username: string;
+        email: string;
+        password: string;
+    }>;
     _bcrypt: any;
     readonly bcrypt: typeof import("bcrypt");
     sendMail?: ((inp: {
@@ -36,16 +29,25 @@ export declare class UserAuth {
         subject: string;
         html: string;
     }) => Promise<any>) | undefined;
-    userStore: UserStore;
+    userStore: UserStore<User>;
     options: {
         skipNewUserValidation: boolean;
     };
+    constructor(ctx: Nextpress.Context);
     init(): Promise<void>;
     private checkAndUpdateUserRequestCap;
-    create(inp: SchemaType<typeof createUserSchema>, opts?: {
+    create(inp: {
+        username: string;
+        email: string;
+        password: string;
+    }, opts?: {
         askForValidation: boolean;
+        extraFields: Partial<User>;
     }): Promise<number>;
-    validateHash(hash: string): Promise<User>;
+    validateHash(hash: string): Promise<{
+        id: number;
+        email: string;
+    }>;
     validateLogin(inp: {
         username: string;
         password: string;
@@ -76,7 +78,10 @@ export declare class UserAuth {
     loginRoute({ username, password }: {
         username: string;
         password: string;
-    }, setUser: (u: User) => Promise<string>, mapUser?: (u: User) => {
+    }, setUser: (u: {
+        id: number;
+        email: string;
+    }) => Promise<string>, mapUser?: (u: User) => {
         email: string;
         id: number;
     }): Promise<{

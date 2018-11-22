@@ -1,15 +1,14 @@
 import knexMod = require("knex");
-declare enum Username {
-}
-interface User {
-    id: number;
+export interface BaseUser {
+    id?: number;
     email: string;
-    username: Username;
+    username: string;
     lastRequest?: Date;
     auth?: string;
-    validationHash?: string;
+    validationHash?: string | null;
+    validationExpires?: Date | null;
 }
-export declare abstract class UserStore {
+export declare abstract class UserStore<User extends BaseUser> {
     abstract initStore(): Promise<void>;
     abstract routineCleanup(): Promise<void>;
     abstract getLastRequest(userId: number): Promise<Date | undefined>;
@@ -20,7 +19,7 @@ export declare abstract class UserStore {
         auth: string;
         validationHash: string | null;
         validationExpires: Date | null;
-    }): Promise<number>;
+    }, extra: Partial<User>): Promise<number>;
     abstract deleteUserId(id: number): Promise<void>;
     abstract queryUserByValidationHash(hash: string): Promise<User | undefined>;
     abstract queryUserByResetPasswordHash(hash: string): Promise<User | undefined>;
@@ -30,7 +29,7 @@ export declare abstract class UserStore {
     abstract writeResetPwdRequest(userId: number, hash: string, expires: Date): Promise<number>;
     abstract writeNewPassword(requestId: string, pwdhash: string): Promise<void>;
 }
-export declare class KnexStore extends UserStore {
+export declare class KnexStore<User extends BaseUser> extends UserStore<User> {
     ctx: Nextpress.Context;
     constructor(ctx: Nextpress.Context);
     _knex: knexMod;
@@ -49,7 +48,7 @@ export declare class KnexStore extends UserStore {
         auth: string;
         validationHash: string | null;
         validationExpires: Date | null;
-    }): Promise<any>;
+    }, extra?: Partial<User>): Promise<any>;
     deleteUserId(pkey: number): Promise<void>;
     queryUserByValidationHash(hash: string): Promise<any>;
     clearValidationHash(userId: number): Promise<void>;
@@ -59,4 +58,3 @@ export declare class KnexStore extends UserStore {
     writeNewPassword(requestId: string, pwdhash: string): Promise<void>;
     queryUserByName(username: string): Promise<any>;
 }
-export {};
