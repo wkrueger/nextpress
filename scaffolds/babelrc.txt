@@ -7,7 +7,10 @@ module.exports = {
       "module-resolver",
       {
         root: ".",
-        alias: { "@common": "./pages-content/_common" },
+        alias: {
+          "pages-content": "./pages-content",
+          "@common": "./pages-content/_common"
+        },
       },
     ],    
   ],
