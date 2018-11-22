@@ -1,29 +1,33 @@
 import knexMod = require("knex")
 import ono = require("ono")
 
-enum Username {}
+//enum Username {}
 
-interface User {
-  id: number
+export interface BaseUser {
+  id?: number
   email: string
-  username: Username
+  username: string
   lastRequest?: Date
   auth?: string
-  validationHash?: string
+  validationHash?: string | null
+  validationExpires?: Date | null
 }
 
-export abstract class UserStore {
+export abstract class UserStore<User extends BaseUser> {
   abstract initStore(): Promise<void>
   abstract routineCleanup(): Promise<void>
   abstract getLastRequest(userId: number): Promise<Date | undefined>
   abstract writeLastRequest(userId: number): Promise<void>
-  abstract writeNewUser(i: {
-    username: string
-    email: string
-    auth: string
-    validationHash: string | null
-    validationExpires: Date | null
-  }): Promise<number>
+  abstract writeNewUser(
+    i: {
+      username: string
+      email: string
+      auth: string
+      validationHash: string | null
+      validationExpires: Date | null
+    },
+    extra: Partial<User>,
+  ): Promise<number>
   abstract deleteUserId(id: number): Promise<void>
   abstract queryUserByValidationHash(hash: string): Promise<User | undefined>
   abstract queryUserByResetPasswordHash(hash: string): Promise<User | undefined>
@@ -34,7 +38,7 @@ export abstract class UserStore {
   abstract writeNewPassword(requestId: string, pwdhash: string): Promise<void>
 }
 
-export class KnexStore extends UserStore {
+export class KnexStore<User extends BaseUser> extends UserStore<User> {
   constructor(public ctx: Nextpress.Context) {
     super()
   }
@@ -113,7 +117,7 @@ export class KnexStore extends UserStore {
   async getLastRequest(id: number) {
     const user = await this._queryUserById(id)
     if (!user) return
-    return user.lastRequest
+    return (user as any).lastRequest as Date
   }
 
   async writeLastRequest(id: number) {
@@ -124,16 +128,19 @@ export class KnexStore extends UserStore {
       })
   }
 
-  async writeNewUser(i: {
-    username: string
-    email: string
-    auth: string
-    validationHash: string | null
-    validationExpires: Date | null
-  }) {
+  async writeNewUser(
+    i: {
+      username: string
+      email: string
+      auth: string
+      validationHash: string | null
+      validationExpires: Date | null
+    },
+    extra: Partial<User> = {},
+  ) {
     try {
       var [pkey] = await this.userTable()
-        .insert(i)
+        .insert(Object.assign({}, extra, i))
         .into("user")
       return pkey
     } catch (err) {

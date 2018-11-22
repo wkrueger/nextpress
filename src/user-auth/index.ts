@@ -4,33 +4,21 @@ import ono = require("ono")
 import { Server } from "../server"
 import day = require("dayjs")
 import { RouterBuilder, RouteDictHelper } from "../server/router-builder"
-import { UserStore, KnexStore } from "./user-stores"
+import { UserStore, KnexStore, BaseUser } from "./user-stores"
 import { RequestHandler, Request } from "express"
 import { timedQueueMw } from "./timed-queue"
-
-type FirstArg<Fn> = Fn extends (i: infer Arg) => any ? Arg : never
-
-const createUserSchema = Yup.object({
-  username: Yup.string().required(),
-  email: Yup.string()
-    .email()
-    .required(),
-  password: Yup.string()
-    .min(6)
-    .required()
-})
 
 const emailSchema = Yup.object({
   email: Yup.string()
     .email()
-    .required()
+    .required(),
 })
 
 const requestIdSchema = Yup.object({
   requestId: Yup.string()
     .min(36)
     .max(36)
-    .required()
+    .required(),
 })
 
 const pwdRequestSchema = Yup.object({
@@ -43,28 +31,21 @@ const pwdRequestSchema = Yup.object({
   requestId: Yup.string()
     .min(36)
     .max(36)
-    .required()
+    .required(),
 })
-
-export interface User {
-  id: number
-  email: string
-  auth?: string
-  validationHash?: string
-}
 
 type SchemaType<T> = T extends Yup.ObjectSchema<infer Y> ? Y : never
 
-export class UserAuth {
-  constructor(public ctx: Nextpress.Context) {
-    ctx.requireContext("default.website")
-    if (this.ctx.loadedContexts.has("default.knex")) {
-      this.userStore = new KnexStore(ctx)
-    }
-    if (!this.sendMail) {
-      console.warn("UserAuth: No sendMail implementation provided.")
-    }
-  }
+export class UserAuth<User extends BaseUser = BaseUser> {
+  schema_createUser = Yup.object({
+    username: Yup.string().required(),
+    email: Yup.string()
+      .email()
+      .required(),
+    password: Yup.string()
+      .min(6)
+      .required(),
+  })
 
   _bcrypt: any
   get bcrypt(): typeof import("bcrypt") {
@@ -74,17 +55,27 @@ export class UserAuth {
   }
 
   sendMail? = this.ctx.email && this.ctx.email.sendMail
-  userStore!: UserStore
+  userStore!: UserStore<User>
 
   options = {
-    skipNewUserValidation: false
+    skipNewUserValidation: false,
+  }
+
+  constructor(public ctx: Nextpress.Context) {
+    ctx.requireContext("default.website")
+    if (this.ctx.loadedContexts.has("default.knex")) {
+      this.userStore = new KnexStore<User>(ctx)
+    }
+    if (!this.sendMail) {
+      console.warn("UserAuth: No sendMail implementation provided.")
+    }
   }
 
   async init() {
     if (!this.userStore) {
       throw Error(
         "UserAuth: No store found. Either setup the supported" +
-          "contexts (knex) or provide your own userStore implementation."
+          "contexts (knex) or provide your own userStore implementation.",
       )
     }
     await this.userStore.initStore()
@@ -107,27 +98,33 @@ export class UserAuth {
     }
   }
 
-  async create(inp: SchemaType<typeof createUserSchema>, opts = { askForValidation: true }) {
+  async create(
+    inp: { username: string; email: string; password: string },
+    opts = { askForValidation: true, extraFields: {} as Partial<User> },
+  ) {
     if (this.options.skipNewUserValidation) {
       opts.askForValidation = false
     }
-    createUserSchema.validateSync(inp, { strict: true })
-    const pwdHash = await this.bcrypt.hash(inp.password, 10)
+    this.schema_createUser.validateSync({ ...(opts.extraFields || {}), ...inp }, { strict: true })
+    const auth = await this.bcrypt.hash(inp.password, 10)
     const validationHash = opts.askForValidation ? uuid() : null
 
-    let expireDate = opts.askForValidation
+    let validationExpires = opts.askForValidation
       ? day()
           .add(2, "hour")
           .toDate()
       : null
 
-    let pkey = await this.userStore.writeNewUser({
-      username: inp.username,
-      email: inp.email,
-      auth: pwdHash,
-      validationHash,
-      validationExpires: expireDate
-    })
+    let pkey = await this.userStore.writeNewUser(
+      {
+        email: inp.email,
+        username: inp.username,
+        validationHash,
+        auth,
+        validationExpires,
+      },
+      opts.extraFields || {},
+    )
 
     if (opts.askForValidation) {
       try {
@@ -140,8 +137,8 @@ export class UserAuth {
           subject: this._newAccountEmailSubject(),
           html: this._validationMailHTML({
             address: inp.email,
-            validationLink: link
-          })
+            validationLink: link,
+          }),
         })
       } catch (err) {
         //fixme use transaction
@@ -153,22 +150,22 @@ export class UserAuth {
     return pkey
   }
 
-  async validateHash(hash: string): Promise<User> {
+  async validateHash(hash: string) {
     if (!hash) throw Error("Invalid hash.")
     const found = await this.userStore.queryUserByValidationHash(hash)
     if (!found) throw Error("Invalid hash.")
-    await this.userStore.clearValidationHash(found.id)
-    return { id: found.id, email: found.email }
+    await this.userStore.clearValidationHash(found.id!)
+    return { id: found.id!, email: found.email }
   }
 
-  async validateLogin(inp: { username: string; password: string }): Promise<User | undefined> {
+  async validateLogin(inp: { username: string; password: string }) {
     const schema = Yup.object({
       username: Yup.string()
         .min(4)
         .required(),
       password: Yup.string()
         .min(6)
-        .required()
+        .required(),
     })
     schema.validateSync(inp)
     const user = await this.userStore.queryUserByName(inp.username)
@@ -184,11 +181,11 @@ export class UserAuth {
     const user = await this.userStore.queryUserByEmail(inp.email)
     if (!user) throw Error("User not found.")
     const storeId = this.userStore.writeResetPwdRequest(
-      user.id,
+      user.id!,
       requestId,
       day()
         .add(2, "hour")
-        .toDate()
+        .toDate(),
     )
     const link = this._createResetPasswordLink(requestId)
     if (storeId) {
@@ -200,8 +197,8 @@ export class UserAuth {
         subject: this._pwdResetEmailSubject(),
         html: this._resetPwdMailHTML({
           address: inp.email,
-          validationLink: link
-        })
+          validationLink: link,
+        }),
       })
     }
   }
@@ -246,7 +243,7 @@ export class UserAuth {
       createUser: timedQueueMw(),
       login: timedQueueMw(30, 10000),
       requestReset: timedQueueMw(),
-      performReset: timedQueueMw()
+      performReset: timedQueueMw(),
     }
   }
 
@@ -257,31 +254,31 @@ export class UserAuth {
   _getPerUserWaitTime() {
     return {
       login: 2,
-      requestPasswordReset: 10
+      requestPasswordReset: 10,
     }
   }
 
   async loginRoute(
     { username, password }: { username: string; password: string },
-    setUser: (u: User) => Promise<string>,
-    mapUser = (u: User) => ({ email: u.email, id: u.id })
+    setUser: (u: { id: number; email: string }) => Promise<string>,
+    mapUser = (u: User) => ({ email: u.email, id: u.id! }),
   ) {
     const user = await this.userStore.queryUserByName(username)
     if (!user) {
       throw ono(
         { statusCode: 401, code: "UNAUTHORIZED" },
-        "Could not authenticate with what you entered."
+        "Could not authenticate with what you entered.",
       )
     }
-    await this.checkAndUpdateUserRequestCap(user.id, this._getPerUserWaitTime().login)
+    await this.checkAndUpdateUserRequestCap(user.id!, this._getPerUserWaitTime().login)
     const found = await this.validateLogin({
       username,
-      password
+      password,
     })
     if (!found) {
       throw ono(
         { statusCode: 401, code: "UNAUTHORIZED" },
-        "Could not authenticate with what you entered."
+        "Could not authenticate with what you entered.",
       )
     }
     const token = await setUser(mapUser(found))
@@ -302,14 +299,14 @@ export class UserAuth {
               .string()
               .email()
               .required(),
-            newUserPwd: yup.string().min(6)
-          })
-        }
+            newUserPwd: yup.string().min(6),
+          }),
+        },
       }).handler(async req => {
         await User.create({
           username: req.body.newUsername,
           email: req.body.newUserEmail,
-          password: req.body.newUserPwd
+          password: req.body.newUserPwd,
         })
         return { status: "OK" }
       }),
@@ -322,25 +319,25 @@ export class UserAuth {
             password: yup
               .string()
               .min(6)
-              .required()
-          })
-        }
+              .required(),
+          }),
+        },
       }).handler(async req => {
         return this.loginRoute(
           { username: req.body.username, password: req.body.password },
-          req.nextpressAuth.setUser.bind(req.nextpressAuth)
+          req.nextpressAuth.setUser.bind(req.nextpressAuth),
         )
       }),
 
       "/request-password-reset": route({
         middleware: [queues.requestReset],
-        validation: { body: yup.object({ email: yup.string().email() }) }
+        validation: { body: yup.object({ email: yup.string().email() }) },
       }).handler(async req => {
         const user = await this.userStore.queryUserByEmail(req.body.email)
         if (!user) throw Error("Not found.")
         await this.checkAndUpdateUserRequestCap(
-          user.id,
-          this._getPerUserWaitTime().requestPasswordReset
+          user.id!,
+          this._getPerUserWaitTime().requestPasswordReset,
         )
         await User.createResetPwdRequest({ email: req.body.email })
         return { status: "OK" }
@@ -352,9 +349,9 @@ export class UserAuth {
           body: yup.object({
             pwd1: yup.string().min(6),
             pwd2: yup.string().min(6),
-            requestId: yup.string().required()
-          })
-        }
+            requestId: yup.string().required(),
+          }),
+        },
       }).handler(async req => {
         await User.performResetPwd(req.body)
         return { status: "OK" }
@@ -362,11 +359,11 @@ export class UserAuth {
 
       "/logout": route({
         method: "all",
-        middleware: [User.throwOnUnauthMw]
+        middleware: [User.throwOnUnauthMw],
       }).handler(async req => {
         if (req.nextpressAuth) await req.nextpressAuth.logout()
         return { status: "OK" }
-      })
+      }),
     }
   }
 
@@ -387,12 +384,12 @@ export class UserAuth {
               req,
               res,
               "Success",
-              "User validated."
+              "User validated.",
             )
-          })
+          }),
         )
       },
-      { noNextJs: true }
+      { noNextJs: true },
     )
 
     return { json, html }
@@ -401,7 +398,7 @@ export class UserAuth {
   _renderSimpleMessage(server: Server, req: any, res: any, title: string, message: string) {
     return server.getNextApp().render(req, res, "/auth/message", {
       title: title,
-      content: message
+      content: message,
     })
   }
 

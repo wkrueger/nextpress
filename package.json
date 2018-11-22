@@ -53,7 +53,7 @@
   },
   "devDependencies": {
     "@types/rimraf": "^2.0.2",
-    "typescript": "^3.1.6"
+    "typescript": "^3.2.0-rc"
   },
   "scripts": {
     "tsc": "tsc",
