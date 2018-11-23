@@ -23,10 +23,10 @@ const requestIdSchema = Yup.object({
 
 const pwdRequestSchema = Yup.object({
   pwd1: Yup.string()
-    .min(6)
+    .min(3)
     .required(),
   pwd2: Yup.string()
-    .min(6)
+    .min(3)
     .required(),
   requestId: Yup.string()
     .min(36)
@@ -43,7 +43,7 @@ export class UserAuth<User extends BaseUser = BaseUser> {
       .email()
       .required(),
     password: Yup.string()
-      .min(6)
+      .min(3)
       .required(),
   })
 
@@ -100,7 +100,10 @@ export class UserAuth<User extends BaseUser = BaseUser> {
 
   async create(
     inp: { username: string; email: string; password: string },
-    opts = { askForValidation: true, extraFields: {} as Partial<User> },
+    opts: { askForValidation: boolean; extraFields?: Partial<User> } = {
+      askForValidation: true,
+      extraFields: {},
+    },
   ) {
     if (this.options.skipNewUserValidation) {
       opts.askForValidation = false
@@ -164,7 +167,7 @@ export class UserAuth<User extends BaseUser = BaseUser> {
         .min(4)
         .required(),
       password: Yup.string()
-        .min(6)
+        .min(3)
         .required(),
     })
     schema.validateSync(inp)
@@ -299,7 +302,7 @@ export class UserAuth<User extends BaseUser = BaseUser> {
               .string()
               .email()
               .required(),
-            newUserPwd: yup.string().min(6),
+            newUserPwd: yup.string().min(3),
           }),
         },
       }).handler(async req => {
@@ -318,7 +321,7 @@ export class UserAuth<User extends BaseUser = BaseUser> {
             username: yup.string().required(),
             password: yup
               .string()
-              .min(6)
+              .min(3)
               .required(),
           }),
         },
@@ -347,8 +350,8 @@ export class UserAuth<User extends BaseUser = BaseUser> {
         middleware: [queues.performReset],
         validation: {
           body: yup.object({
-            pwd1: yup.string().min(6),
-            pwd2: yup.string().min(6),
+            pwd1: yup.string().min(3),
+            pwd2: yup.string().min(3),
             requestId: yup.string().required(),
           }),
         },
