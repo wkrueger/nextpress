@@ -42,7 +42,7 @@ export declare class UserAuth<User extends BaseUser = BaseUser> {
         password: string;
     }, opts?: {
         askForValidation: boolean;
-        extraFields: Partial<User>;
+        extraFields?: Partial<User>;
     }): Promise<number>;
     validateHash(hash: string): Promise<{
         id: number;

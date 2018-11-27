@@ -9,6 +9,7 @@ import { promisify } from "util"
 import { resolve } from "path"
 import { RouterBuilder } from "./router-builder"
 import helmet = require("helmet")
+import { setWithLanguage } from "../messages/messages"
 
 export type ExpressApp = ReturnType<typeof expressMod>
 
@@ -18,8 +19,9 @@ export class Server {
     public isProduction = process.env.NODE_ENV === "production",
   ) {
     if (!ctx.loadedContexts.has("default.website")) {
-      throw Error("Server required the default.website context to be used.")
+      throw Error("Server requires the default.website context to be used.")
     }
+    setWithLanguage(ctx.website.language)
   }
 
   options = {

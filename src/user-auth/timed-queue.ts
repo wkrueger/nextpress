@@ -1,4 +1,5 @@
 import { RequestHandler } from "express"
+import { messages } from "../messages/messages"
 
 /**
  * FIXME: Consider using limitd or raphi
@@ -11,7 +12,7 @@ class TimedQueue {
 
   push() {
     if (this.list.length >= this.size) {
-      throw Error("Wait some seconds until attempting again.")
+      throw Error(messages.wait_some_seconds)
     }
     this.list.push(true)
     setTimeout(() => {
@@ -22,7 +23,7 @@ class TimedQueue {
 
 export let timedQueueMw: (size?: number, wait?: number) => RequestHandler = (
   size = 10,
-  wait = 10000
+  wait = 10000,
 ) => {
   let queue = new TimedQueue(size, wait)
   return (req, res, next) => {

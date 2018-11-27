@@ -12,6 +12,7 @@ export declare const websiteContext: {
             logRequests: boolean;
             bundleAnalyzer: boolean;
             useCompression: boolean;
+            language: string;
         };
     };
 };

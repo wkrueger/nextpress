@@ -7,6 +7,7 @@ import { RouterBuilder, RouteDictHelper } from "../server/router-builder"
 import { UserStore, KnexStore, BaseUser } from "./user-stores"
 import { RequestHandler, Request } from "express"
 import { timedQueueMw } from "./timed-queue"
+import { messages as msg } from "../messages/messages"
 
 const emailSchema = Yup.object({
   email: Yup.string()
@@ -83,7 +84,7 @@ export class UserAuth<User extends BaseUser = BaseUser> {
   }
 
   private async checkAndUpdateUserRequestCap(userId: number, seconds: number) {
-    if (!userId) throw Error("Invalid input.")
+    if (!userId) throw Error(msg.invalid_input)
     let lastReq = await this.userStore.getLastRequest(userId)
     if (
       !lastReq ||
@@ -94,7 +95,7 @@ export class UserAuth<User extends BaseUser = BaseUser> {
       await this.userStore.writeLastRequest(userId)
       return
     } else {
-      throw Error("Try again in a few seconds.")
+      throw Error(msg.try_again_in_a_few_seconds)
     }
   }
 
@@ -154,9 +155,9 @@ export class UserAuth<User extends BaseUser = BaseUser> {
   }
 
   async validateHash(hash: string) {
-    if (!hash) throw Error("Invalid hash.")
+    if (!hash) throw Error(msg.invalid_hash)
     const found = await this.userStore.queryUserByValidationHash(hash)
-    if (!found) throw Error("Invalid hash.")
+    if (!found) throw Error(msg.invalid_hash)
     await this.userStore.clearValidationHash(found.id!)
     return { id: found.id!, email: found.email }
   }
@@ -174,7 +175,7 @@ export class UserAuth<User extends BaseUser = BaseUser> {
     const user = await this.userStore.queryUserByName(inp.username)
     if (!user) return undefined
     const check = await this.bcrypt.compare(inp.password, user.auth!)
-    if (user.validationHash) throw Error("User needs to validate his email first.")
+    if (user.validationHash) throw Error(msg.validate_email_first)
     return check ? user : undefined
   }
 
@@ -182,7 +183,7 @@ export class UserAuth<User extends BaseUser = BaseUser> {
     emailSchema.validateSync(inp)
     const requestId = uuid()
     const user = await this.userStore.queryUserByEmail(inp.email)
-    if (!user) throw Error("User not found.")
+    if (!user) throw Error(msg.user_not_found)
     const storeId = this.userStore.writeResetPwdRequest(
       user.id!,
       requestId,
@@ -215,8 +216,8 @@ export class UserAuth<User extends BaseUser = BaseUser> {
   async performResetPwd(inp: SchemaType<typeof pwdRequestSchema>) {
     pwdRequestSchema.validateSync(inp)
     const found = await this.findResetPwdRequest({ requestId: inp.requestId })
-    if (!found) throw Error("Invalid request")
-    if (inp.pwd1 !== inp.pwd2) throw Error("Password confirmation failed.")
+    if (!found) throw Error(msg.invalid_request)
+    if (inp.pwd1 !== inp.pwd2) throw Error(msg.password_confirmation_failed)
     await this.userStore.writeNewPassword(inp.requestId, await this.bcrypt.hash(inp.pwd1, 10))
   }
 
@@ -337,7 +338,7 @@ export class UserAuth<User extends BaseUser = BaseUser> {
         validation: { body: yup.object({ email: yup.string().email() }) },
       }).handler(async req => {
         const user = await this.userStore.queryUserByEmail(req.body.email)
-        if (!user) throw Error("Not found.")
+        if (!user) throw Error(msg.not_found)
         await this.checkAndUpdateUserRequestCap(
           user.id!,
           this._getPerUserWaitTime().requestPasswordReset,
@@ -376,21 +377,16 @@ export class UserAuth<User extends BaseUser = BaseUser> {
 
     const html = await routerBuilder.createHtmlRouter(
       async ({ router }) => {
-        router.get(
-          this._validateRoute(),
-          RouterBuilder.createHandler(async (req, res) => {
+        router.get(this._validateRoute(), async (req, res) => {
+          try {
             const hash = req.query.seq
             let user = await User.validateHash(hash)
             req.nextpressAuth.setUser({ id: user.id, email: user.email })
-            return this._renderSimpleMessage(
-              routerBuilder.server,
-              req,
-              res,
-              "Success",
-              "User validated.",
-            )
-          }),
-        )
+            this._renderSimpleMessage(routerBuilder.server, req, res, "Success", "User validated.")
+          } catch (err) {
+            this._renderSimpleMessage(routerBuilder.server, req, res, "Error", err.message)
+          }
+        })
       },
       { noNextJs: true },
     )
