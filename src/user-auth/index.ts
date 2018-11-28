@@ -138,7 +138,7 @@ export class UserAuth<User extends BaseUser = BaseUser> {
         }
         await this.sendMail({
           email: inp.email,
-          subject: this._newAccountEmailSubject(),
+          subject: this._validationMailSubject(),
           html: this._validationMailHTML({
             address: inp.email,
             validationLink: link,
@@ -198,7 +198,7 @@ export class UserAuth<User extends BaseUser = BaseUser> {
       }
       await this.sendMail({
         email: inp.email,
-        subject: this._pwdResetEmailSubject(),
+        subject: this._resetPwdMailSubject(),
         html: this._resetPwdMailHTML({
           address: inp.email,
           validationLink: link,
@@ -387,6 +387,16 @@ export class UserAuth<User extends BaseUser = BaseUser> {
             this._renderSimpleMessage(routerBuilder.server, req, res, "Error", err.message)
           }
         })
+
+        router.get(this._passwordResetFormRoute(), async (req, res) => {
+          try {
+            routerBuilder.server
+              .getNextApp()
+              .render(req, res, this._passwordResetFormRoute(), { requestId: req.query.requestId })
+          } catch (err) {
+            this._renderSimpleMessage(routerBuilder.server, req, res, "Error", err.message)
+          }
+        })
       },
       { noNextJs: true },
     )
@@ -399,12 +409,6 @@ export class UserAuth<User extends BaseUser = BaseUser> {
       title: title,
       content: message,
     })
-  }
-
-  _validationMailHTML(i: { address: string; validationLink: string }) {
-    return `<p>Hi! ${i.address}.</p>
-      <p>Follow this link to validate your account: 
-      <a href="${i.validationLink}">${i.validationLink}</a>.</p>`
   }
 
   /**
@@ -433,6 +437,12 @@ export class UserAuth<User extends BaseUser = BaseUser> {
     }${this._passwordResetFormRoute()}?requestId=${encodeURIComponent(seq)}`
   }
 
+  _validationMailHTML(i: { address: string; validationLink: string }) {
+    return `<p>Hi! ${i.address}.</p>
+      <p>Follow this link to validate your account: 
+      <a href="${i.validationLink}">${i.validationLink}</a>.</p>`
+  }
+
   _resetPwdMailHTML(i: { address: string; validationLink: string }) {
     return `
       <p>Hello, ${i.address},
@@ -440,11 +450,11 @@ export class UserAuth<User extends BaseUser = BaseUser> {
       <p><a href="${i.validationLink}">${i.validationLink}</a></p>`
   }
 
-  _pwdResetEmailSubject() {
+  _resetPwdMailSubject() {
     return "password reset"
   }
 
-  _newAccountEmailSubject() {
+  _validationMailSubject() {
     return "New account"
   }
 }

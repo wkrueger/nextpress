@@ -100,10 +100,6 @@ export declare class UserAuth<User extends BaseUser = BaseUser> {
         html: import("express-serve-static-core").Router;
     }>;
     _renderSimpleMessage(server: Server, req: any, res: any, title: string, message: string): Promise<void>;
-    _validationMailHTML(i: {
-        address: string;
-        validationLink: string;
-    }): string;
     /**
      * Overrideable.
      * The route to be used for user creation validation email.
@@ -116,11 +112,15 @@ export declare class UserAuth<User extends BaseUser = BaseUser> {
     _passwordResetFormRoute(): string;
     _createValidationLink(hash: string): string;
     _createResetPasswordLink(seq: string): string;
+    _validationMailHTML(i: {
+        address: string;
+        validationLink: string;
+    }): string;
     _resetPwdMailHTML(i: {
         address: string;
         validationLink: string;
     }): string;
-    _pwdResetEmailSubject(): string;
-    _newAccountEmailSubject(): string;
+    _resetPwdMailSubject(): string;
+    _validationMailSubject(): string;
 }
 export {};
