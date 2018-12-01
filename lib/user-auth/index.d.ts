@@ -85,7 +85,7 @@ export declare class UserAuth<User extends BaseUser = BaseUser> {
         email: string;
         id: number;
     }): Promise<{
-        status: string;
+        id: number | undefined;
         token: string;
     }>;
     userJsonMethods(helper: typeof RouteDictHelper): {

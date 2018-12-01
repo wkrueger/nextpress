@@ -143,6 +143,10 @@ export class Server {
           config.plugins.push(new ForkTsCheckerWebpackPlugin())
         }
         config.plugins.push(new LodashPlugin())
+        config.module.rules.push({
+          test: /\.(woff|woff2|eot|ttf|otf|svg)$/,
+          use: ["url-loader"],
+        })
         return config
       },
     }

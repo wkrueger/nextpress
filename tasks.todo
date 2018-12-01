@@ -1,6 +1,8 @@
-  - tests
-  - docusaurus
-  - tear apart site + api (and easy tests for them)
-  - hmr for website
-  - investigate RPC for API servers
-  - make the password schema a variable
+  ☐ tests
+  ☐ docusaurus
+  ☐ tear apart site + api (and easy tests for them)
+  ☐ hmr for website
+  ☐ investigate RPC for API servers
+  ☐ make the password schema a variable
+  ☐ split website server and api server
+  ☐ session + jwt solution (for ssr)

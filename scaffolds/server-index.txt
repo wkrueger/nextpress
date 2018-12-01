@@ -1,4 +1,3 @@
-import path = require("path")
 import { Server } from "@proerd/nextpress/lib/server"
 import { getContext } from "./context"
 //

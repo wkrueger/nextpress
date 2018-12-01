@@ -286,7 +286,7 @@ export class UserAuth<User extends BaseUser = BaseUser> {
       )
     }
     const token = await setUser(mapUser(found))
-    return { status: "OK", token }
+    return { id: user.id , token }
   }
 
   userJsonMethods(helper: typeof RouteDictHelper) {
