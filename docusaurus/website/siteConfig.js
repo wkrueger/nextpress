@@ -23,8 +23,8 @@ const users = [
 const siteConfig = {
   title: "nextpress", // Title for your website.
   tagline: "A pack of node.js website tools",
-  url: "https://your-docusaurus-test-site.com", // Your website URL
-  baseUrl: "/", // Base URL for your project */
+  url: "https://wkrueger.gitlab.io", // Your website URL
+  baseUrl: "/nextpress/", // Base URL for your project */
   // For github.io type URLs, you would set the url and baseUrl like:
   //   url: 'https://facebook.github.io',
   //   baseUrl: '/test-site/',
