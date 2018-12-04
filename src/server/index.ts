@@ -10,6 +10,7 @@ import { resolve } from "path"
 import { RouterBuilder } from "./router-builder"
 import helmet = require("helmet")
 import { setWithLanguage } from "../messages/messages"
+import { fontPlugin } from "./font-plugin"
 
 export type ExpressApp = ReturnType<typeof expressMod>
 
@@ -151,10 +152,6 @@ export class Server {
           config.plugins.push(new ForkTsCheckerWebpackPlugin())
         }
         config.plugins.push(new LodashPlugin())
-        config.module.rules.push({
-          test: /\.(woff|woff2|eot|ttf|otf|svg)$/,
-          use: ["url-loader"]
-        })
         return config
       }
     }
@@ -165,7 +162,7 @@ export class Server {
       const withBundleAnalyzer = require("@zeit/next-bundle-analyzer")
       out = withBundleAnalyzer({ ...out, ...this.options.bundleAnalyzer })
     }
-    return out
+    return fontPlugin(out)
   }
 
   createSessionStore() {
