@@ -8,4 +8,7 @@ export = {
   password_confirmation_failed: "As senhas não coincidem.",
   not_found: "Não encontrado.",
   wait_some_seconds: "Favor aguarde alguns segundos, então tente novamente.",
+  success: "Sucesso",
+  user_validated: "Usuário validado com sucesso.",
+  error: "Erro"
 }

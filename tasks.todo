@@ -6,3 +6,4 @@
   ☐ make the password schema a variable
   ☐ split website server and api server
   ☐ session + jwt solution (for ssr)
+  ☐ reset password cannot answer "not found"  for non existent email
