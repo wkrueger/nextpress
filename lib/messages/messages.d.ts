@@ -8,5 +8,8 @@ export declare let messages: {
     password_confirmation_failed: string;
     not_found: string;
     wait_some_seconds: string;
+    success: string;
+    user_validated: string;
+    error: string;
 };
 export declare function setWithLanguage(lang: string): void;

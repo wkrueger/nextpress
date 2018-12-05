@@ -1,6 +1,6 @@
 {
   "name": "@proerd/nextpress",
-  "version": "2.0.0-dev19",
+  "version": "2.0.0-dev21",
   "main": "lib/index.js",
   "typings": "lib/index.d.ts",
   "dependencies": {
@@ -36,6 +36,7 @@
     "express-session": "^1.15.6",
     "fork-ts-checker-webpack-plugin": "^0.4.9",
     "helmet": "^3.13.0",
+    "inline-css": "^2.4.1",
     "jest": "^23.4.2",
     "jsonwebtoken": "^8.3.0",
     "knex": "^0.14.6",
