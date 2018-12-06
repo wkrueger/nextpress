@@ -22,7 +22,7 @@ export const knexContext = createContextMapper({
           migration: (
             trx: knex.Transaction,
             oldVersion: number,
-            newVersion: number
+            newVersion: number,
           ) => Promise<void>
         }) {
           const client = this.db()
@@ -65,19 +65,25 @@ export const knexContext = createContextMapper({
                 host: ctx.host,
                 user: ctx.user,
                 password: ctx.password,
-                database: ctx.name
-              }
+                database: ctx.name,
+              },
             })
           }
           return this._db
-        }
-      }
+        },
+      },
     }
-  }
+  },
 })
 
 declare global {
   namespace Nextpress {
     interface CustomContext extends ReturnType<typeof knexContext["envContext"]> {}
+  }
+
+  namespace Express {
+    interface Request {
+      transaction?: knex
+    }
   }
 }

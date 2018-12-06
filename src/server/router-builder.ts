@@ -42,11 +42,24 @@ export class RouterBuilder {
         if (a.priority! > b.priority!) return 1
         return 0
       })
-      let fn: expressMod.RequestHandler = async (req, res) => {
-        let result = await routeOpts.handler!(req)
-        res.send(result)
+      let fn: expressMod.RequestHandler = async (req, res, next) => {
+        try {
+          var result: any
+          if (routeOpts.withTransaction) {
+            await routeOpts.withTransaction.database.db().transaction(async trx => {
+              req.transaction = trx
+              result = await routeOpts.handler!(req)
+            })
+          } else {
+            result = await routeOpts.handler!(req)
+          }
+
+          res.send(result)
+        } catch (err) {
+          next(err)
+        }
       }
-      router[method](key, ...mw, RouterBuilder.createHandler(fn))
+      router[method](key, ...mw, fn)
     })
   }
 
@@ -98,6 +111,17 @@ export class RouterBuilder {
     return router
   }
 
+  /**
+   * creates a router suited for JSON API routes, from a simplified RPC-ish syntax;  
+   * usage:
+   ```
+   var router = builder.rpcishJsonRouter( setup => { 
+     return {
+       '/my-route': setup.route( ... ).handler( ... )
+     }
+   })
+   ```
+   */
   async rpcishJsonRouter<Dict extends Record<string, RouteOpts>>(
     setup: (i: typeof RouteDictHelper) => Dict,
   ) {
@@ -143,6 +167,7 @@ export interface RouteOpts {
   middleware?: PriorityRequestHandler[]
   validation?: SchemaDict
   handler?: Function
+  withTransaction?: Nextpress.Context
 }
 
 type NeverParams = { body: unknown; query: unknown; params: unknown }

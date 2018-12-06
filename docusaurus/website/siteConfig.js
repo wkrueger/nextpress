@@ -23,8 +23,8 @@ const users = [
 const siteConfig = {
   title: "nextpress", // Title for your website.
   tagline: "A pack of node.js website tools",
-  url: "https://your-docusaurus-test-site.com", // Your website URL
-  baseUrl: "/", // Base URL for your project */
+  url: "https://https://wkrueger.gitlab.io", // Your website URL
+  baseUrl: "/nextpress/", // Base URL for your project */
   // For github.io type URLs, you would set the url and baseUrl like:
   //   url: 'https://facebook.github.io',
   //   baseUrl: '/test-site/',
@@ -38,7 +38,7 @@ const siteConfig = {
 
   // For no header links in the top nav bar -> headerLinks: [],
   headerLinks: [
-    { doc: "intro", label: "Docs" }
+    { doc: "intro", label: "Docs" },
     // {doc: 'doc4', label: 'API'},
     // {page: 'help', label: 'Help'},
     // {blog: true, label: 'Blog'},
@@ -55,7 +55,7 @@ const siteConfig = {
   /* Colors for website */
   colors: {
     primaryColor: "#2E8555",
-    secondaryColor: "#205C3B"
+    secondaryColor: "#205C3B",
   },
 
   /* Custom fonts for website */
@@ -77,11 +77,11 @@ const siteConfig = {
 
   highlight: {
     // Highlight.js theme to use for syntax highlighting in code blocks.
-    theme: "default"
+    theme: "default",
   },
 
   // Add custom scripts here that would be placed in <script> tags.
-  scripts: ["https://buttons.github.io/buttons.js"],
+  scripts: [],
 
   // On page navigation for the current documentation page.
   onPageNav: "separate",
@@ -90,7 +90,7 @@ const siteConfig = {
 
   // Open Graph and Twitter card images.
   ogImage: "img/docusaurus.png",
-  twitterImage: "img/docusaurus.png"
+  twitterImage: "img/docusaurus.png",
 
   // Show documentation's last contributor's name.
   // enableUpdateBy: true,
