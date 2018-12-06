@@ -63,6 +63,9 @@ export function ContextFactory(i: {
   )
   return {
     projectRoot: i.projectRoot,
+    pathFromRoot(...args: string[]) {
+      return path.resolve(i.projectRoot, ...args)
+    },
     loadedContexts: new Set<string>((i.mappers || []).map(m => m.id)),
     ...pluginContext,
     requireContext(...contextIds: string[]) {
@@ -92,6 +95,7 @@ declare global {
   namespace Nextpress {
     interface DefaultContext {
       projectRoot: string
+      pathFromRoot: (...i: string[]) => string
       loadedContexts: Set<string>
       requireContext: (...contextIds: string[]) => void
     }

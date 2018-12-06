@@ -16,6 +16,7 @@ declare global {
     namespace Nextpress {
         interface DefaultContext {
             projectRoot: string;
+            pathFromRoot: (...i: string[]) => string;
             loadedContexts: Set<string>;
             requireContext: (...contextIds: string[]) => void;
         }

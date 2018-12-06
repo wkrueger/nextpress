@@ -7,19 +7,19 @@ import { RouterBuilder, RouteDictHelper } from "../server/router-builder"
 import { UserStore, KnexStore, BaseUser } from "./user-stores"
 import { RequestHandler, Request } from "express"
 import { timedQueueMw } from "./timed-queue"
-import { messages as msg } from "../messages/messages"
+import { messages as msg, messages } from "../messages/messages"
 
 const emailSchema = Yup.object({
   email: Yup.string()
     .email()
-    .required(),
+    .required()
 })
 
 const requestIdSchema = Yup.object({
   requestId: Yup.string()
     .min(36)
     .max(36)
-    .required(),
+    .required()
 })
 
 const pwdRequestSchema = Yup.object({
@@ -32,7 +32,7 @@ const pwdRequestSchema = Yup.object({
   requestId: Yup.string()
     .min(36)
     .max(36)
-    .required(),
+    .required()
 })
 
 type SchemaType<T> = T extends Yup.ObjectSchema<infer Y> ? Y : never
@@ -45,7 +45,7 @@ export class UserAuth<User extends BaseUser = BaseUser> {
       .required(),
     password: Yup.string()
       .min(3)
-      .required(),
+      .required()
   })
 
   _bcrypt: any
@@ -59,7 +59,7 @@ export class UserAuth<User extends BaseUser = BaseUser> {
   userStore!: UserStore<User>
 
   options = {
-    skipNewUserValidation: false,
+    skipNewUserValidation: false
   }
 
   constructor(public ctx: Nextpress.Context) {
@@ -76,7 +76,7 @@ export class UserAuth<User extends BaseUser = BaseUser> {
     if (!this.userStore) {
       throw Error(
         "UserAuth: No store found. Either setup the supported" +
-          "contexts (knex) or provide your own userStore implementation.",
+          "contexts (knex) or provide your own userStore implementation."
       )
     }
     await this.userStore.initStore()
@@ -103,8 +103,8 @@ export class UserAuth<User extends BaseUser = BaseUser> {
     inp: { username: string; email: string; password: string },
     opts: { askForValidation: boolean; extraFields?: Partial<User> } = {
       askForValidation: true,
-      extraFields: {},
-    },
+      extraFields: {}
+    }
   ) {
     if (this.options.skipNewUserValidation) {
       opts.askForValidation = false
@@ -125,9 +125,9 @@ export class UserAuth<User extends BaseUser = BaseUser> {
         username: inp.username,
         validationHash,
         auth,
-        validationExpires,
+        validationExpires
       },
-      opts.extraFields || {},
+      opts.extraFields || {}
     )
 
     if (opts.askForValidation) {
@@ -141,8 +141,8 @@ export class UserAuth<User extends BaseUser = BaseUser> {
           subject: this._validationMailSubject(),
           html: this._validationMailHTML({
             address: inp.email,
-            validationLink: link,
-          }),
+            validationLink: link
+          })
         })
       } catch (err) {
         //fixme use transaction
@@ -169,7 +169,7 @@ export class UserAuth<User extends BaseUser = BaseUser> {
         .required(),
       password: Yup.string()
         .min(3)
-        .required(),
+        .required()
     })
     schema.validateSync(inp)
     const user = await this.userStore.queryUserByName(inp.username)
@@ -189,7 +189,7 @@ export class UserAuth<User extends BaseUser = BaseUser> {
       requestId,
       day()
         .add(2, "hour")
-        .toDate(),
+        .toDate()
     )
     const link = this._createResetPasswordLink(requestId)
     if (storeId) {
@@ -201,8 +201,8 @@ export class UserAuth<User extends BaseUser = BaseUser> {
         subject: this._resetPwdMailSubject(),
         html: this._resetPwdMailHTML({
           address: inp.email,
-          validationLink: link,
-        }),
+          validationLink: link
+        })
       })
     }
   }
@@ -247,7 +247,7 @@ export class UserAuth<User extends BaseUser = BaseUser> {
       createUser: timedQueueMw(),
       login: timedQueueMw(30, 10000),
       requestReset: timedQueueMw(),
-      performReset: timedQueueMw(),
+      performReset: timedQueueMw()
     }
   }
 
@@ -258,35 +258,35 @@ export class UserAuth<User extends BaseUser = BaseUser> {
   _getPerUserWaitTime() {
     return {
       login: 2,
-      requestPasswordReset: 10,
+      requestPasswordReset: 10
     }
   }
 
   async loginRoute(
     { username, password }: { username: string; password: string },
     setUser: (u: { id: number; email: string }) => Promise<string>,
-    mapUser = (u: User) => ({ email: u.email, id: u.id! }),
+    mapUser = (u: User) => ({ email: u.email, id: u.id! })
   ) {
     const user = await this.userStore.queryUserByName(username)
     if (!user) {
       throw ono(
         { statusCode: 401, code: "UNAUTHORIZED" },
-        "Could not authenticate with what you entered.",
+        "Could not authenticate with what you entered."
       )
     }
     await this.checkAndUpdateUserRequestCap(user.id!, this._getPerUserWaitTime().login)
     const found = await this.validateLogin({
       username,
-      password,
+      password
     })
     if (!found) {
       throw ono(
         { statusCode: 401, code: "UNAUTHORIZED" },
-        "Could not authenticate with what you entered.",
+        "Could not authenticate with what you entered."
       )
     }
     const token = await setUser(mapUser(found))
-    return { id: user.id , token }
+    return { id: user.id, token }
   }
 
   userJsonMethods(helper: typeof RouteDictHelper) {
@@ -303,14 +303,14 @@ export class UserAuth<User extends BaseUser = BaseUser> {
               .string()
               .email()
               .required(),
-            newUserPwd: yup.string().min(3),
-          }),
-        },
+            newUserPwd: yup.string().min(3)
+          })
+        }
       }).handler(async req => {
         await User.create({
           username: req.body.newUsername,
           email: req.body.newUserEmail,
-          password: req.body.newUserPwd,
+          password: req.body.newUserPwd
         })
         return { status: "OK" }
       }),
@@ -323,25 +323,25 @@ export class UserAuth<User extends BaseUser = BaseUser> {
             password: yup
               .string()
               .min(3)
-              .required(),
-          }),
-        },
+              .required()
+          })
+        }
       }).handler(async req => {
         return this.loginRoute(
           { username: req.body.username, password: req.body.password },
-          req.nextpressAuth.setUser.bind(req.nextpressAuth),
+          req.nextpressAuth.setUser.bind(req.nextpressAuth)
         )
       }),
 
       "/request-password-reset": route({
         middleware: [queues.requestReset],
-        validation: { body: yup.object({ email: yup.string().email() }) },
+        validation: { body: yup.object({ email: yup.string().email() }) }
       }).handler(async req => {
         const user = await this.userStore.queryUserByEmail(req.body.email)
         if (!user) throw Error(msg.not_found)
         await this.checkAndUpdateUserRequestCap(
           user.id!,
-          this._getPerUserWaitTime().requestPasswordReset,
+          this._getPerUserWaitTime().requestPasswordReset
         )
         await User.createResetPwdRequest({ email: req.body.email })
         return { status: "OK" }
@@ -353,9 +353,9 @@ export class UserAuth<User extends BaseUser = BaseUser> {
           body: yup.object({
             pwd1: yup.string().min(3),
             pwd2: yup.string().min(3),
-            requestId: yup.string().required(),
-          }),
-        },
+            requestId: yup.string().required()
+          })
+        }
       }).handler(async req => {
         await User.performResetPwd(req.body)
         return { status: "OK" }
@@ -363,11 +363,11 @@ export class UserAuth<User extends BaseUser = BaseUser> {
 
       "/logout": route({
         method: "all",
-        middleware: [User.throwOnUnauthMw],
+        middleware: [User.throwOnUnauthMw]
       }).handler(async req => {
         if (req.nextpressAuth) await req.nextpressAuth.logout()
         return { status: "OK" }
-      }),
+      })
     }
   }
 
@@ -382,9 +382,15 @@ export class UserAuth<User extends BaseUser = BaseUser> {
             const hash = req.query.seq
             let user = await User.validateHash(hash)
             req.nextpressAuth.setUser({ id: user.id, email: user.email })
-            this._renderSimpleMessage(routerBuilder.server, req, res, "Success", "User validated.")
+            this._renderSimpleMessage(
+              routerBuilder.server,
+              req,
+              res,
+              messages.success,
+              messages.user_validated
+            )
           } catch (err) {
-            this._renderSimpleMessage(routerBuilder.server, req, res, "Error", err.message)
+            this._renderSimpleMessage(routerBuilder.server, req, res, messages.error, err.message)
           }
         })
 
@@ -398,7 +404,7 @@ export class UserAuth<User extends BaseUser = BaseUser> {
           }
         })
       },
-      { noNextJs: true },
+      { noNextJs: true }
     )
 
     return { json, html }
@@ -407,7 +413,7 @@ export class UserAuth<User extends BaseUser = BaseUser> {
   _renderSimpleMessage(server: Server, req: any, res: any, title: string, message: string) {
     return server.getNextApp().render(req, res, "/auth/message", {
       title: title,
-      content: message,
+      content: message
     })
   }
 

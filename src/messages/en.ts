@@ -8,4 +8,7 @@ export = {
   password_confirmation_failed: "Password confirmation failed.",
   not_found: "Not found.",
   wait_some_seconds: "Please wait some seconds before attempting again.",
+  success: "Success",
+  user_validated: "User successfully validated.",
+  error: "Error"
 }

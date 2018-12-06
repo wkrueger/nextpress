@@ -8,5 +8,8 @@ declare const _default: {
     password_confirmation_failed: string;
     not_found: string;
     wait_some_seconds: string;
+    success: string;
+    user_validated: string;
+    error: string;
 };
 export = _default;
