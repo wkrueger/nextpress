@@ -28,4 +28,9 @@ declare global {
         interface CustomContext extends ReturnType<typeof knexContext["envContext"]> {
         }
     }
+    namespace Express {
+        interface Request {
+            transaction?: knex;
+        }
+    }
 }

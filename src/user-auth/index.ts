@@ -387,20 +387,28 @@ export class UserAuth<User extends BaseUser = BaseUser> {
               req,
               res,
               messages.success,
-              messages.user_validated
+              messages.user_validated,
+              "VALIDATION"
             )
           } catch (err) {
-            this._renderSimpleMessage(routerBuilder.server, req, res, messages.error, err.message)
+            this._renderSimpleMessage(
+              routerBuilder.server,
+              req,
+              res,
+              messages.error,
+              err.message,
+              "ERROR"
+            )
           }
         })
 
         router.get(this._passwordResetFormRoute(), async (req, res) => {
           try {
-            routerBuilder.server
-              .getNextApp()
-              .render(req, res, this._passwordResetFormRoute(), { requestId: req.query.requestId })
+            routerBuilder.server.getNextApp().render(req, res, this._passwordResetFormRoute(), {
+              requestId: req.query.requestId
+            })
           } catch (err) {
-            this._renderSimpleMessage(routerBuilder.server, req, res, "Error", err.message)
+            this._renderSimpleMessage(routerBuilder.server, req, res, "Error", err.message, "ERROR")
           }
         })
       },
@@ -410,10 +418,18 @@ export class UserAuth<User extends BaseUser = BaseUser> {
     return { json, html }
   }
 
-  _renderSimpleMessage(server: Server, req: any, res: any, title: string, message: string) {
+  _renderSimpleMessage(
+    server: Server,
+    req: any,
+    res: any,
+    title: string,
+    message: string,
+    type: string
+  ) {
     return server.getNextApp().render(req, res, "/auth/message", {
       title: title,
-      content: message
+      content: message,
+      type
     })
   }
 

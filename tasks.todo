@@ -1,9 +1,9 @@
   ☐ tests
   ☐ docusaurus
   ☐ tear apart site + api (and easy tests for them)
-  ☐ hmr for website
   ☐ investigate RPC for API servers
-  ☐ make the password schema a variable
+  ☐ make the user schema a variable
   ☐ split website server and api server
+  ☐ hmr for api server
   ☐ session + jwt solution (for ssr)
-  ☐ reset password cannot answer "not found"  for non existent email
+  ☐ (security) reset password cannot answer "not found" for non existent email
