@@ -3,6 +3,5 @@ export declare function buildscript(projectRoot: string): {
     tool: any;
     tasks: {
         scaffold(): void;
-        compileServer(): Promise<void>;
     };
 };

@@ -1,5 +1,0 @@
-node_modules
-.next
-.nextpress
-*envfile.env
-coverage

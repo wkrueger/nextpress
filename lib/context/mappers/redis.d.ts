@@ -1,4 +1,3 @@
-import Redis = require("ioredis");
 export declare const redisContext: {
     id: string;
     envKeys: never[];
@@ -7,7 +6,7 @@ export declare const redisContext: {
         getKey: (s: string) => string | undefined;
     }): {
         redis: {
-            instance: () => Redis.Redis;
+            instance: () => any;
         };
     };
 };

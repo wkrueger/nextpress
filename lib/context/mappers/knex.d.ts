@@ -14,12 +14,12 @@ export declare const knexContext: {
             password: string;
             _currentFwVersion: number;
             _oldFwVersion: number;
-            _db: knex;
+            _db: any;
             init(opts: {
                 currentVersion: number;
-                migration: (trx: knex.Transaction, oldVersion: number, newVersion: number) => Promise<void>;
+                migration: (trx: any, oldVersion: number, newVersion: number) => Promise<void>;
             }): Promise<void>;
-            db(): knex;
+            db(): any;
         };
     };
 };

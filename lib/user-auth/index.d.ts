@@ -3,25 +3,13 @@ import { Server } from "../server";
 import { RouterBuilder, RouteDictHelper } from "../server/router-builder";
 import { UserStore, BaseUser } from "./user-stores";
 import { RequestHandler } from "express";
-declare const emailSchema: Yup.ObjectSchema<{
-    email: string;
-}>;
-declare const requestIdSchema: Yup.ObjectSchema<{
-    requestId: string;
-}>;
-declare const pwdRequestSchema: Yup.ObjectSchema<{
-    pwd1: string;
-    pwd2: string;
-    requestId: string;
-}>;
+declare const emailSchema: any;
+declare const requestIdSchema: any;
+declare const pwdRequestSchema: any;
 declare type SchemaType<T> = T extends Yup.ObjectSchema<infer Y> ? Y : never;
 export declare class UserAuth<User extends BaseUser = BaseUser> {
     ctx: Nextpress.Context;
-    schema_createUser: Yup.ObjectSchema<{
-        username: string;
-        email: string;
-        password: string;
-    }>;
+    schema_createUser: any;
     _bcrypt: any;
     readonly bcrypt: typeof import("bcrypt");
     sendMail?: ((inp: {
@@ -62,10 +50,10 @@ export declare class UserAuth<User extends BaseUser = BaseUser> {
      * this counts all the requests this server receives
      */
     _getRequestThrottleMws(): {
-        createUser: RequestHandler;
-        login: RequestHandler;
-        requestReset: RequestHandler;
-        performReset: RequestHandler;
+        createUser: any;
+        login: any;
+        requestReset: any;
+        performReset: any;
     };
     /**
      * overrideable
@@ -96,10 +84,10 @@ export declare class UserAuth<User extends BaseUser = BaseUser> {
         "/logout": import("../server/router-builder").RouteOpts;
     };
     userRoutes(routerBuilder: RouterBuilder): Promise<{
-        json: import("express-serve-static-core").Router;
-        html: import("express-serve-static-core").Router;
+        json: any;
+        html: any;
     }>;
-    _renderSimpleMessage(server: Server, req: any, res: any, title: string, message: string, type: string): Promise<void>;
+    _renderSimpleMessage(server: Server, req: any, res: any, title: string, message: string, type: string): any;
     /**
      * Overrideable.
      * The route to be used for user creation validation email.

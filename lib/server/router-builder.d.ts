@@ -4,14 +4,14 @@ import yup = require("yup");
 export declare class RouterBuilder {
     server: Server;
     constructor(server: Server);
-    static yup: typeof yup;
-    static express: typeof expressMod;
+    static yup: any;
+    static express: any;
     /**
      * Wraps request handler in try/catch/next
      */
-    static createHandler: (fn: expressMod.RequestHandler) => expressMod.RequestHandler;
+    static createHandler: (fn: any) => any;
     static appendJsonRoutesFromDict<Dict extends Record<string, RouteOpts>>(router: expressMod.Router, setup: (i: typeof RouteDictHelper) => Dict): void;
-    nextMw: expressMod.RequestHandler;
+    nextMw: any;
     /**
      * creates a router suited for next.js html/react routes;
      * we add the common middleware, you set up the routes on the callback;
@@ -21,14 +21,14 @@ export declare class RouterBuilder {
         router: expressMod.Router;
     }) => Promise<void>, options?: {
         noNextJs?: boolean;
-    }): Promise<import("express-serve-static-core").Router>;
+    }): Promise<any>;
     /**
      * creates a router suited for JSON API routes;
      * we add the common middleware, you set up the routes on the callback;
      */
     createJsonRouter(callback: ({ router }: {
         router: expressMod.Router;
-    }) => Promise<void>): Promise<import("express-serve-static-core").Router>;
+    }) => Promise<void>): Promise<any>;
     /**
      * creates a router suited for JSON API routes, from a simplified RPC-ish syntax;
      * usage:
@@ -40,8 +40,8 @@ export declare class RouterBuilder {
      })
      ```
      */
-    rpcishJsonRouter<Dict extends Record<string, RouteOpts>>(setup: (i: typeof RouteDictHelper) => Dict): Promise<import("express-serve-static-core").Router>;
-    jsonErrorHandler(err: any, _req: expressMod.Request, res: expressMod.Response, next: expressMod.NextFunction): import("express-serve-static-core").Response | undefined;
+    rpcishJsonRouter<Dict extends Record<string, RouteOpts>>(setup: (i: typeof RouteDictHelper) => Dict): Promise<any>;
+    jsonErrorHandler(err: any, _req: expressMod.Request, res: expressMod.Response, next: expressMod.NextFunction): any;
     route: <Opts extends RouteOpts>(opts?: Opts) => {
         handler: (fn: HandlerType<Opts>) => RouteOpts;
     };
@@ -76,7 +76,7 @@ export declare const RouteDictHelper: {
     route: <Opts extends RouteOpts>(opts?: Opts) => {
         handler: (fn: HandlerType<Opts>) => RouteOpts;
     };
-    yup: typeof yup;
+    yup: any;
 };
 declare type UnwrapSchema<T> = T extends yup.ObjectSchema<infer R> ? R : unknown;
 declare type SchemaDict = {

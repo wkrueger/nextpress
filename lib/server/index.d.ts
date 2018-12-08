@@ -1,6 +1,5 @@
 /// <reference path="../../types/global.types.d.ts" />
 import expressMod = require("express");
-import { Server as NextServer } from "next";
 export declare type ExpressApp = ReturnType<typeof expressMod>;
 export declare class Server {
     ctx: Nextpress.Context;
@@ -22,7 +21,7 @@ export declare class Server {
         };
     };
     private _nextApp?;
-    getNextApp(): NextServer;
+    getNextApp(): any;
     buildForProduction(): Promise<void>;
     /**
      * all set, run
@@ -34,15 +33,15 @@ export declare class Server {
     setupRoutes({ app }: {
         app: ExpressApp;
     }): Promise<void>;
-    setupGlobalMiddleware(expressApp: expressMod.Router): Promise<expressMod.Router>;
+    setupGlobalMiddleware(expressApp: expressMod.Router): Promise<any>;
     /**
      * the next.config.js
      */
     getNextjsConfig(): any;
     createSessionStore(): any;
     createSessionMw(store: any): any;
-    createAuthMw_Session(): expressMod.RequestHandler;
-    createAuthMw_Jwt(): expressMod.RequestHandler;
+    createAuthMw_Session(): any;
+    createAuthMw_Jwt(): any;
 }
 interface User {
     id: number;
