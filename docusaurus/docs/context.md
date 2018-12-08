@@ -16,7 +16,7 @@ import { getContext } from "./context"
 })()
 ```
 
-`getContext` sets ups contexts in a separate file in order to provide an easy access singleton.
+`getContext` sets ups contexts in a separate file in order to provide an easy access singleton. Typing `getContext` anywhere may kick in the default import.
 
 ```ts
 import { ContextFactory } from "@proerd/nextpress/lib/context"
@@ -36,8 +36,7 @@ export function getContext() {
 }
 ```
 
-We call `websiteContext` a **context**. A context is defined using `createContextMapper`, and its
-type is declared to typescript using the following `declare global` snippet:
+We call `websiteContext` a **context**. A context houses a singleton object and may require enviroment variables:
 
 ```ts
 export const jwtContext = createContextMapper({
@@ -76,6 +75,8 @@ getContext().jwt.secret
 
 ## knex
 
+[(source)](https://github.com/wkrueger/nextpress/blob/master/src/context/mappers/knex.ts)
+
 ```ts
 import { knexContext } from "@proerd/nextpress/lib/context/mappers/knex"
 ```
@@ -85,15 +86,9 @@ import { knexContext } from "@proerd/nextpress/lib/context/mappers/knex"
 
 Notable exports:
 
-```ts
-init(opts: {
-    currentVersion: number;
-    migration: (trx: knex.Transaction, oldVersion: number, newVersion: number) => Promise<void>;
-}): Promise<void>
-```
+### init ({ migrations: Migration[] })
 
-This is optional and might be used as a migration helper (FIXME: this is not knex migrations, still). We keep track of the
-schema with the `meta` table.
+This should be called at least once and is where migrations are intended to be handled.
 
 ```ts
 db()

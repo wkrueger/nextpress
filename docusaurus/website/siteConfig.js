@@ -23,7 +23,7 @@ const users = [
 const siteConfig = {
   title: "nextpress", // Title for your website.
   tagline: "A pack of node.js website tools",
-  url: "https://wkrueger.gitlab.io", // Your website URL
+  url: "https://wkrueger.github.io", // Your website URL
   baseUrl: "/nextpress/", // Base URL for your project */
   // For github.io type URLs, you would set the url and baseUrl like:
   //   url: 'https://facebook.github.io',
@@ -38,7 +38,7 @@ const siteConfig = {
 
   // For no header links in the top nav bar -> headerLinks: [],
   headerLinks: [
-    { doc: "intro", label: "Docs" },
+    { doc: "intro", label: "Docs" }
     // {doc: 'doc4', label: 'API'},
     // {page: 'help', label: 'Help'},
     // {blog: true, label: 'Blog'},
@@ -48,14 +48,14 @@ const siteConfig = {
   users,
 
   /* path to images for header/footer */
-  headerIcon: "img/docusaurus.svg",
-  footerIcon: "img/docusaurus.svg",
-  favicon: "img/favicon.png",
+  headerIcon: "img/sanic.png",
+  footerIcon: "img/sanic.png",
+  favicon: "img/sanic.png",
 
   /* Colors for website */
   colors: {
-    primaryColor: "#2E8555",
-    secondaryColor: "#205C3B",
+    primaryColor: "#380F45",
+    secondaryColor: "#321991"
   },
 
   /* Custom fonts for website */
@@ -77,7 +77,7 @@ const siteConfig = {
 
   highlight: {
     // Highlight.js theme to use for syntax highlighting in code blocks.
-    theme: "default",
+    theme: "default"
   },
 
   // Add custom scripts here that would be placed in <script> tags.
@@ -90,7 +90,7 @@ const siteConfig = {
 
   // Open Graph and Twitter card images.
   ogImage: "img/docusaurus.png",
-  twitterImage: "img/docusaurus.png",
+  twitterImage: "img/docusaurus.png"
 
   // Show documentation's last contributor's name.
   // enableUpdateBy: true,
