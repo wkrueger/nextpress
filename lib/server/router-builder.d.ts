@@ -4,14 +4,14 @@ import yup = require("yup");
 export declare class RouterBuilder {
     server: Server;
     constructor(server: Server);
-    static yup: any;
-    static express: any;
+    static yup: typeof yup;
+    static express: typeof expressMod;
     /**
      * Wraps request handler in try/catch/next
      */
-    static createHandler: (fn: any) => any;
+    static createHandler: (fn: expressMod.RequestHandler) => expressMod.RequestHandler;
     static appendJsonRoutesFromDict<Dict extends Record<string, RouteOpts>>(router: expressMod.Router, setup: (i: typeof RouteDictHelper) => Dict): void;
-    nextMw: any;
+    nextMw: expressMod.RequestHandler;
     /**
      * creates a router suited for next.js html/react routes;
      * we add the common middleware, you set up the routes on the callback;
@@ -21,14 +21,14 @@ export declare class RouterBuilder {
         router: expressMod.Router;
     }) => Promise<void>, options?: {
         noNextJs?: boolean;
-    }): Promise<any>;
+    }): Promise<import("express-serve-static-core").Router>;
     /**
      * creates a router suited for JSON API routes;
      * we add the common middleware, you set up the routes on the callback;
      */
     createJsonRouter(callback: ({ router }: {
         router: expressMod.Router;
-    }) => Promise<void>): Promise<any>;
+    }) => Promise<void>): Promise<import("express-serve-static-core").Router>;
     /**
      * creates a router suited for JSON API routes, from a simplified RPC-ish syntax;
      * usage:
@@ -40,8 +40,8 @@ export declare class RouterBuilder {
      })
      ```
      */
-    rpcishJsonRouter<Dict extends Record<string, RouteOpts>>(setup: (i: typeof RouteDictHelper) => Dict): Promise<any>;
-    jsonErrorHandler(err: any, _req: expressMod.Request, res: expressMod.Response, next: expressMod.NextFunction): any;
+    rpcishJsonRouter<Dict extends Record<string, RouteOpts>>(setup: (i: typeof RouteDictHelper) => Dict): Promise<import("express-serve-static-core").Router>;
+    jsonErrorHandler(err: any, _req: expressMod.Request, res: expressMod.Response, next: expressMod.NextFunction): import("express-serve-static-core").Response | undefined;
     route: <Opts extends RouteOpts>(opts?: Opts) => {
         handler: (fn: HandlerType<Opts>) => RouteOpts;
     };
@@ -76,7 +76,7 @@ export declare const RouteDictHelper: {
     route: <Opts extends RouteOpts>(opts?: Opts) => {
         handler: (fn: HandlerType<Opts>) => RouteOpts;
     };
-    yup: any;
+    yup: typeof yup;
 };
 declare type UnwrapSchema<T> = T extends yup.ObjectSchema<infer R> ? R : unknown;
 declare type SchemaDict = {

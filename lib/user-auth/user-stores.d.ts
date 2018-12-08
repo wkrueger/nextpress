@@ -1,3 +1,4 @@
+import knexMod = require("knex");
 export interface BaseUser {
     id?: number;
     email: string;
@@ -31,10 +32,10 @@ export declare abstract class UserStore<User extends BaseUser> {
 export declare class KnexStore<User extends BaseUser> extends UserStore<User> {
     ctx: Nextpress.Context;
     constructor(ctx: Nextpress.Context);
-    _knex: any;
+    _knex: knexMod;
     userTableName: string;
     fields: string[];
-    userTable(): any;
+    userTable(): knexMod.QueryBuilder;
     static initRun: boolean;
     initStore(): Promise<void>;
     private _queryUserById;

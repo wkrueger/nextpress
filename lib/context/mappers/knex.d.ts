@@ -1,4 +1,33 @@
 import knex = require("knex");
+export interface Migration {
+    version: number;
+    upgrade: (trx: knex.Transaction) => Promise<void>;
+    downgrade: (trx: knex.Transaction) => Promise<void>;
+}
+export declare const customKnexContext: (extraOpts?: knex.Config) => {
+    id: string;
+    envKeys: string[];
+    optionalKeys: string[];
+    envContext({ getKey }: {
+        getKey: (s: string) => string | undefined;
+    }): {
+        database: {
+            client: string;
+            host: string;
+            name: string;
+            user: string;
+            password: string;
+            _currentFwVersion: number;
+            _oldFwVersion: number;
+            _db: knex;
+            init(opts: {
+                migrations?: Migration[] | undefined;
+            }): Promise<void>;
+            db(): knex;
+            _checkMigrationVersions(migrations: Migration[]): void;
+        };
+    };
+};
 export declare const knexContext: {
     id: string;
     envKeys: string[];
@@ -14,12 +43,12 @@ export declare const knexContext: {
             password: string;
             _currentFwVersion: number;
             _oldFwVersion: number;
-            _db: any;
+            _db: knex;
             init(opts: {
-                currentVersion: number;
-                migration: (trx: any, oldVersion: number, newVersion: number) => Promise<void>;
+                migrations?: Migration[] | undefined;
             }): Promise<void>;
-            db(): any;
+            db(): knex;
+            _checkMigrationVersions(migrations: Migration[]): void;
         };
     };
 };

@@ -57,7 +57,7 @@
   "devDependencies": {
     "@types/rimraf": "^2.0.2",
     "@types/shelljs": "^0.8.0",
-    "typescript": "^3.2.0-rc"
+    "typescript": "^3.2.2"
   },
   "scripts": {
     "tsc": "tsc",
