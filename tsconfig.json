@@ -10,5 +10,6 @@
     "pretty": false,
     "skipLibCheck": true
   },
-  "include": ["src", "types"]
+  "include": ["src", "types"],
+  "exclude": ["scaffolds"]
 }

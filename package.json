@@ -1,6 +1,6 @@
 {
   "name": "@proerd/nextpress",
-  "version": "2.0.0-dev23",
+  "version": "3.0.0-dev-0",
   "main": "lib/index.js",
   "typings": "lib/index.d.ts",
   "dependencies": {
@@ -48,6 +48,7 @@
     "ono": "^4.0.5",
     "request": "^2.87.0",
     "rimraf": "^2.6.2",
+    "shelljs": "^0.8.3",
     "ts-jest": "^23.0.1",
     "url-loader": "^1.1.2",
     "uuid": "^3.2.1",
@@ -55,11 +56,13 @@
   },
   "devDependencies": {
     "@types/rimraf": "^2.0.2",
+    "@types/shelljs": "^0.8.0",
     "typescript": "^3.2.0-rc"
   },
   "scripts": {
     "tsc": "tsc",
-    "prepublishOnly": "npm run tsc"
+    "prepublishOnly": "node ./build && npm run tsc",
+    "docs": "node ./build"
   },
   "peerDependencies": {
     "bcrypt": "^3.0.2",
