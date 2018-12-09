@@ -1,6 +1,6 @@
 # nextpress
 
-<center><img src="./docs/img/sanic.png" width="100"/></center>
+<p align="center"><img src="./docs/img/sanic.png" width="100"/></p>
 
 Package website things that could become commmon between projects into a module.
 
