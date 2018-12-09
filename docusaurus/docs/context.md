@@ -16,7 +16,7 @@ import { getContext } from "./context"
 })()
 ```
 
-`getContext` sets ups contexts in a separate file in order to provide an easy access singleton. Typing `getContext` anywhere may kick in the default import. Edit `context.ts` in oder to add other preset contexts or your own custom.
+`getContext` sets ups contexts in a separate file in order to provide an easy access singleton. Typing `getContext` anywhere may kick in the default import. Edit `context.ts` in oder to add other preset contexts or your own.
 
 ```ts
 import { ContextFactory } from "@proerd/nextpress/lib/context"
@@ -43,6 +43,7 @@ export const jwtContext = createContextMapper({
   id: "default.jwt",
   envKeys: ["JWT_SECRET"],
   optionalKeys: [],
+  //this gets **merged** into the main context singleton
   envContext({ getKey }) {
     return {
       jwt: {
