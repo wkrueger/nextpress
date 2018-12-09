@@ -1,6 +1,6 @@
 {
   "name": "@proerd/nextpress",
-  "version": "2.0.0-dev23",
+  "version": "2.0.0-dev25",
   "main": "lib/index.js",
   "typings": "lib/index.d.ts",
   "dependencies": {
@@ -33,7 +33,6 @@
     "enzyme": "^3.3.0",
     "enzyme-adapter-react-16": "^1.1.1",
     "express": "^4.16.3",
-    "express-session": "^1.15.6",
     "fork-ts-checker-webpack-plugin": "^0.4.9",
     "helmet": "^3.13.0",
     "inline-css": "^2.4.1",
@@ -48,14 +47,18 @@
     "ono": "^4.0.5",
     "request": "^2.87.0",
     "rimraf": "^2.6.2",
+    "start-server-webpack-plugin": "^2.2.5",
     "ts-jest": "^23.0.1",
     "url-loader": "^1.1.2",
     "uuid": "^3.2.1",
+    "webpack": "^4.27.1",
+    "webpack-cli": "^3.1.2",
+    "webpack-node-externals": "^1.7.2",
     "yup": "^0.26.3"
   },
   "devDependencies": {
     "@types/rimraf": "^2.0.2",
-    "typescript": "^3.2.0-rc"
+    "typescript": "^3.2.2"
   },
   "scripts": {
     "tsc": "tsc",

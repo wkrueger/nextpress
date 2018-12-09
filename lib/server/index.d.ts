@@ -1,16 +1,23 @@
 /// <reference path="../../types/global.types.d.ts" />
+/// <reference types="node" />
 import expressMod = require("express");
 import { Server as NextServer } from "next";
+import http = require("http");
 export declare type ExpressApp = ReturnType<typeof expressMod>;
 export declare class Server {
     ctx: Nextpress.Context;
+    opts: {
+        tag?: string;
+    };
+    nodeHttpServer?: http.Server;
+    expressApp?: ExpressApp;
     isProduction: boolean;
-    constructor(ctx: Nextpress.Context, isProduction?: boolean);
+    constructor(ctx: Nextpress.Context, opts?: {
+        tag?: string;
+    });
     options: {
         errorRoute: string;
         useNextjs: boolean;
-        useSession: boolean;
-        useJwt: boolean;
         useHelmet: boolean;
         jwtOptions: {
             tokenHeader: string;
@@ -21,27 +28,28 @@ export declare class Server {
             analyzeBrowser: boolean;
         };
     };
-    private _nextApp?;
-    getNextApp(): NextServer;
-    buildForProduction(): Promise<void>;
+    useHMR(): void;
     /**
      * all set, run
      */
-    run(): Promise<{}>;
+    run(): Promise<void>;
+    /**
+     * app.use's on the express app
+     */
+    setupGlobalMiddleware(expressApp: expressMod.Router): Promise<expressMod.Router>;
+    _nextApp?: NextServer;
+    getNextApp(): NextServer;
+    buildForProduction(): Promise<void>;
     /**
      * this is meant to be overriden in order to set the server routes.
      */
     setupRoutes({ app }: {
         app: ExpressApp;
     }): Promise<void>;
-    setupGlobalMiddleware(expressApp: expressMod.Router): Promise<expressMod.Router>;
     /**
      * the next.config.js
      */
     getNextjsConfig(): any;
-    createSessionStore(): any;
-    createSessionMw(store: any): any;
-    createAuthMw_Session(): expressMod.RequestHandler;
     createAuthMw_Jwt(): expressMod.RequestHandler;
 }
 interface User {
