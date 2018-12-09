@@ -1,7 +1,7 @@
 {
   "docs": {
     "Nextpress": ["intro", "getting-started", "folders"],
-    "Common customization": ["context", "server"],
+    "Expanding": ["context", "server"],
     "Auth module": []
   }
 }

@@ -26,10 +26,7 @@ export class Server {
   }
 
   options = {
-    errorRoute: "/error",
     useNextjs: true,
-    useSession: true,
-    useJwt: false,
     useHelmet: true,
     jwtOptions: {
       tokenHeader: "authorization",
@@ -39,6 +36,60 @@ export class Server {
       analyzeServer: false,
       analyzeBrowser: true
     }
+  }
+
+  /**
+   * all set, run
+   */
+  async run() {
+    if (this.isProduction && this.options.useNextjs) {
+      await this.buildForProduction()
+    }
+    const expressApp = expressMod()
+    await this.setupGlobalMiddleware(expressApp)
+    await this.setupRoutes({ app: expressApp })
+    return new Promise(resolve => {
+      const nodeServer = expressApp.listen(this.ctx.website.port, () => {
+        console.log("Server running on " + this.ctx.website.port)
+        resolve(nodeServer)
+      })
+    })
+  }
+
+  /**
+   * app.use's on the express app
+   */
+  async setupGlobalMiddleware(expressApp: expressMod.Router) {
+    if (this.options.useNextjs) {
+      await this.getNextApp().prepare()
+    }
+    if (this.ctx.website.logRequests) {
+      expressApp.use(morgan("short"))
+    }
+    if (this.ctx.website.useCompression && this.isProduction) {
+      const compression = require("compression")
+      expressApp.use(compression())
+    }
+    if (this.isProduction) {
+      expressApp.use(
+        "/static",
+        expressMod.static(resolve(this.ctx.projectRoot, "static"), {
+          maxAge: "30d"
+        })
+      )
+    }
+    if (this.ctx.jwt) {
+      const authMw = this.createAuthMw_Jwt()
+      expressApp.use(authMw)
+    }
+    const robotsPath = resolve(this.ctx.projectRoot, "static", "robots.txt")
+    expressApp.get("/robots.txt", (_, response) => {
+      response.sendFile(robotsPath)
+    })
+    if (this.options.useHelmet) {
+      expressApp.use(helmet())
+    }
+    return expressApp
   }
 
   private _nextApp?: NextServer
@@ -68,70 +119,11 @@ export class Server {
   }
 
   /**
-   * all set, run
-   */
-  async run() {
-    if (this.isProduction && this.options.useNextjs) {
-      await this.buildForProduction()
-    }
-    const expressApp = expressMod()
-    await this.setupGlobalMiddleware(expressApp)
-    await this.setupRoutes({ app: expressApp })
-    return new Promise(resolve => {
-      const nodeServer = expressApp.listen(this.ctx.website.port, () => {
-        console.log("Server running on " + this.ctx.website.port)
-        resolve(nodeServer)
-      })
-    })
-  }
-
-  /**
    * this is meant to be overriden in order to set the server routes.
    */
   async setupRoutes({ app }: { app: ExpressApp }): Promise<void> {
     const builder = new RouterBuilder(this)
     app.use(await builder.createHtmlRouter())
-  }
-
-  async setupGlobalMiddleware(expressApp: expressMod.Router) {
-    if (this.options.useNextjs) {
-      await this.getNextApp().prepare()
-    }
-    if (this.ctx.website.logRequests) {
-      expressApp.use(morgan("short"))
-    }
-    if (this.ctx.website.useCompression && this.isProduction) {
-      const compression = require("compression")
-      expressApp.use(compression())
-    }
-    if (this.isProduction) {
-      expressApp.use(
-        "/static",
-        expressMod.static(resolve(this.ctx.projectRoot, "static"), {
-          maxAge: "30d"
-        })
-      )
-    }
-    if (this.options.useSession) {
-      const store = this.createSessionStore()
-      const sessionMw = this.createSessionMw(store)
-      expressApp.use(sessionMw)
-      const authMw = this.createAuthMw_Session()
-      expressApp.use(authMw)
-    }
-    if (this.options.useJwt) {
-      if (!this.ctx.jwt) throw Error("useJwt requires a jwt contextMapper.")
-      const authMw = this.createAuthMw_Jwt()
-      expressApp.use(authMw)
-    }
-    const robotsPath = resolve(this.ctx.projectRoot, "static", "robots.txt")
-    expressApp.get("/robots.txt", (_, response) => {
-      response.sendFile(robotsPath)
-    })
-    if (this.options.useHelmet) {
-      expressApp.use(helmet())
-    }
-    return expressApp
   }
 
   /**
@@ -163,43 +155,6 @@ export class Server {
       out = withBundleAnalyzer({ ...out, ...this.options.bundleAnalyzer })
     }
     return fontPlugin(out)
-  }
-
-  createSessionStore() {
-    if (this.ctx.loadedContexts.has("default.redis")) {
-      const redisMod = require("connect-redis")
-      const StoreConstructor = redisMod(expressSession)
-      return new StoreConstructor({
-        client: this.ctx.redis.instance()
-      })
-    }
-    if (this.ctx.loadedContexts.has("default.knex")) {
-      const knexMod = require("connect-session-knex")
-      const StoreConstructor = knexMod(expressSession)
-      return new StoreConstructor({
-        knex: this.ctx.database.db()
-      })
-    }
-  }
-
-  createSessionMw(store: any) {
-    return expressSession({
-      secret: this.ctx.website.sessionSecret,
-      cookie: {
-        maxAge: 1000 * 60 * 60 * 24 * 7
-      },
-      resave: false,
-      saveUninitialized: false,
-      store
-    })
-  }
-
-  createAuthMw_Session() {
-    const out: expressMod.RequestHandler = (req, _, next) => {
-      req.nextpressAuth = new UserAuthSession(req)
-      next()
-    }
-    return out
   }
 
   createAuthMw_Jwt() {

@@ -12,7 +12,7 @@ to check it out is just running the scaffold yourself.
 - `server` is where the source server TS lives;
 - `static` is where static files are served.
 
-* You may notice 2 `tsconfig.json`s. The one in the root folder is for the front-end code, the one inside "server" is for the... server.
+> You may notice 2 `tsconfig.json`s. The one in the root folder is for the front-end code, the one inside "server" is for the... server.
 
 Nextpress bundles `babel-module-resolver`. The scaffold comes with some path aliases:
 

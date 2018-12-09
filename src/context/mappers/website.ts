@@ -2,8 +2,9 @@ import { createContextMapper } from ".."
 
 export const websiteContext = createContextMapper({
   id: "default.website",
-  envKeys: ["WEBSITE_ROOT", "WEBSITE_PORT", "WEBSITE_SESSION_SECRET"],
+  envKeys: ["WEBSITE_ROOT", "WEBSITE_PORT"],
   optionalKeys: [
+    "WEBSITE_BASEURL",
     "WEBSITE_LOG_REQUESTS",
     "WEBSITE_BUNDLE_ANALYZER",
     "WEBSITE_COMPRESSION",
@@ -14,7 +15,7 @@ export const websiteContext = createContextMapper({
       website: {
         root: getKey("WEBSITE_ROOT")!,
         port: Number(getKey("WEBSITE_PORT")!),
-        sessionSecret: getKey("WEBSITE_SESSION_SECRET")!,
+        baseUrl: getKey("WEBSITE_BASEURL") || "/",
         logRequests: Boolean(getKey("WEBSITE_LOG_REQUESTS")),
         bundleAnalyzer: Boolean(getKey("WEBSITE_BUNDLE_ANALYZER")),
         useCompression: Boolean(getKey("WEBSITE_COMPRESSION")),

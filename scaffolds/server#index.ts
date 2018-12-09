@@ -4,10 +4,7 @@ import { getContext } from "./context"
 ;(async () => {
   const context = getContext()
 
-  await context.database.init({
-    currentVersion: 1,
-    async migration() {},
-  })
+  await context.database.init({ migrations: [] })
 
   const server = new Server(context)
 
