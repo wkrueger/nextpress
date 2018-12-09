@@ -1,7 +1,6 @@
 ///<reference path="../../types/global.types.d.ts"/>
 import expressMod = require("express")
 import morgan = require("morgan")
-import expressSession = require("express-session")
 import jwt = require("jsonwebtoken")
 import { Server as NextServer } from "next"
 import rimraf = require("rimraf")
@@ -11,14 +10,17 @@ import { RouterBuilder } from "./router-builder"
 import helmet = require("helmet")
 import { setWithLanguage } from "../messages/messages"
 import { fontPlugin } from "./font-plugin"
+import http = require("http")
 
 export type ExpressApp = ReturnType<typeof expressMod>
+declare const module: any
 
 export class Server {
-  constructor(
-    public ctx: Nextpress.Context,
-    public isProduction = process.env.NODE_ENV === "production"
-  ) {
+  nodeHttpServer?: http.Server
+  expressApp?: ExpressApp
+  isProduction = process.env.NODE_ENV === "production"
+
+  constructor(public ctx: Nextpress.Context, public opts: { tag?: string } = {}) {
     if (!ctx.loadedContexts.has("default.website")) {
       throw Error("Server requires the default.website context to be used.")
     }
@@ -26,6 +28,7 @@ export class Server {
   }
 
   options = {
+    errorRoute: "/error",
     useNextjs: true,
     useHelmet: true,
     jwtOptions: {
@@ -38,6 +41,11 @@ export class Server {
     }
   }
 
+  useHMR() {
+    const hmr = require("./hmr") as typeof import("./hmr")
+    hmr.setServerHmr(this)
+  }
+
   /**
    * all set, run
    */
@@ -45,15 +53,24 @@ export class Server {
     if (this.isProduction && this.options.useNextjs) {
       await this.buildForProduction()
     }
-    const expressApp = expressMod()
-    await this.setupGlobalMiddleware(expressApp)
-    await this.setupRoutes({ app: expressApp })
-    return new Promise(resolve => {
-      const nodeServer = expressApp.listen(this.ctx.website.port, () => {
-        console.log("Server running on " + this.ctx.website.port)
-        resolve(nodeServer)
-      })
-    })
+    this.expressApp = expressMod()
+    ;(this.expressApp as any).__nextpress = true
+    await this.setupGlobalMiddleware(this.expressApp)
+    await this.setupRoutes({ app: this.expressApp })
+    if (!this.nodeHttpServer) {
+      this.nodeHttpServer = http.createServer(this.expressApp)
+      this.nodeHttpServer.listen(this.ctx.website.port)
+      console.log("Server running on " + this.ctx.website.port)
+    } else {
+      let listeners = this.nodeHttpServer!.listeners("request")
+      for (let x = 0; x < listeners.length; x++) {
+        const listener = listeners[x]
+        if ((listener as any).__nextpress) {
+          this.nodeHttpServer.removeListener("request", listener as any)
+        }
+      }
+      this.nodeHttpServer.addListener("request", this.expressApp)
+    }
   }
 
   /**
@@ -61,7 +78,7 @@ export class Server {
    */
   async setupGlobalMiddleware(expressApp: expressMod.Router) {
     if (this.options.useNextjs) {
-      await this.getNextApp().prepare()
+      this.getNextApp() //.prepare()
     }
     if (this.ctx.website.logRequests) {
       expressApp.use(morgan("short"))
@@ -92,7 +109,7 @@ export class Server {
     return expressApp
   }
 
-  private _nextApp?: NextServer
+  _nextApp?: NextServer
   getNextApp() {
     if (!this._nextApp) {
       if (!this.options.useNextjs) {
@@ -104,6 +121,7 @@ export class Server {
         dir: this.ctx.projectRoot,
         conf: this.getNextjsConfig()
       })
+      this._nextApp.prepare()
     }
     return this._nextApp
   }
@@ -236,6 +254,13 @@ export class UserAuthJwt implements UserAuthSession {
   async logout() {
     this._user = undefined
   }
+}
+
+if (!process.listenerCount("unhandledRejection")) {
+  process.on("unhandledRejection", (...arg: any[]) => {
+    console.error("unhandledRejection", ...arg)
+    process.exit(1)
+  })
 }
 
 declare global {

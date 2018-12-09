@@ -28,6 +28,7 @@ export declare class UserAuth<User extends BaseUser = BaseUser> {
         email: string;
         subject: string;
         html: string;
+        from?: string | undefined;
     }) => Promise<any>) | undefined;
     userStore: UserStore<User>;
     options: {

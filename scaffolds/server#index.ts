@@ -7,11 +7,8 @@ import { getContext } from "./context"
   await context.database.init({ migrations: [] })
 
   const server = new Server(context)
-
+  server.useHMR()
   server.run()
 })()
 
-process.on("unhandledRejection", (...arg: any[]) => {
-  console.error("unhandledRejection", ...arg)
-  process.exit(1)
-})
+module.hot && module.hot.accept()

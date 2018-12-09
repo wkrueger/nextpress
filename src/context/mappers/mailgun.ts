@@ -11,7 +11,7 @@ export const mailgunContext = createContextMapper({
         from: getKey("MAILGUN_FROM")!,
         domain: getKey("MAILGUN_DOMAIN")!,
         apiKey: getKey("MAILGUN_API_KEY")!,
-        async sendMail(inp: { email: string; subject: string; html: string; from: string }) {
+        async sendMail(inp: { email: string; subject: string; html: string; from?: string }) {
           let ctx = out.email
           const body: any = await new Promise((res, rej) => {
             request(

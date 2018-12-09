@@ -23,15 +23,14 @@ export function buildscript(projectRoot: string) {
 
       packagejson.scripts = Object.assign({}, packagejson.scripts, {
         compileWithoutErrors: "tsc -p ./server || exit 0",
-        postinstall: "yarn run compileWithoutErrors",
-        dev: "yarn run compileWithoutErrors && node ./.nextpress/index",
-        start: "node ./.nextpress/index",
+        dev: "webpack --config ./server/webpack.config.js",
+        start: "yarn run compileWithoutErrors && node ./.nextpress/index",
         testServer: 'jest -c="jest.server.config.js"',
         testClient: 'jest -c="jest.client.config.js"'
       })
 
       fs.writeFileSync(pjspath, JSON.stringify(packagejson, null, 2))
-      shelljs.exec("yarn", { cwd: process.cwd() })
+      console.log("Add the latest version of react and typescript...")
       shelljs.exec("yarn add react react-dom typescript", { cwd: process.cwd() })
     }
   }

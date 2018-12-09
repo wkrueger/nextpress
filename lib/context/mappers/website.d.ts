@@ -8,7 +8,7 @@ export declare const websiteContext: {
         website: {
             root: string;
             port: number;
-            sessionSecret: string;
+            baseUrl: string;
             logRequests: boolean;
             bundleAnalyzer: boolean;
             useCompression: boolean;

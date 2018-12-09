@@ -13,6 +13,7 @@ export declare const mailgunContext: {
                 email: string;
                 subject: string;
                 html: string;
+                from?: string | undefined;
             }): Promise<any>;
         };
     };
