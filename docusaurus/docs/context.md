@@ -69,6 +69,9 @@ The snippet above:
 `jwt` will only be present on the global typing `Nextpress.Context` if `@proerd/nextpress/lib/context/mappers/jwt`
 is ever required on the project.
 
+> You may have noticed our imports are quite long, pointing to the module's `/lib` folder.
+> It works like that in order to better handle selective module loading and selective type definitions.
+
 ## Acessing the context
 
 ```ts

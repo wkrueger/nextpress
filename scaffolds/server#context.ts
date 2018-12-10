@@ -1,7 +1,7 @@
 import { ContextFactory } from "@proerd/nextpress/lib/context"
 import { websiteContext } from "@proerd/nextpress/lib/context/mappers/website"
 import { knexContext } from "@proerd/nextpress/lib/context/mappers/knex"
-import * as path from "path"
+import path from "path"
 
 let context: Nextpress.Context
 

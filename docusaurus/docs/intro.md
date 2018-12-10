@@ -16,9 +16,9 @@ Hmm, what else:
 - Written in typescript, written for typescript (although, since we dont use fancy decorator stuff,
   js shall just work out of the box)
 
-For those who don't know, next.js is sort of a react configuration package,
+For those who don't know, next.js is sort of a react configuration package
 that simplifies hard things (such as SSR and routing) through the use of some opinionated setup (ex,
-a file-system router). So that in the end you can just focus on writing the pages, intead of fiddling
+a file-system router). So that in the end you can just focus on writing the pages, instead of fiddling
 with webpack.
 
 Nextpress does not aim to be a "very-complete framework that works for everything", since that would

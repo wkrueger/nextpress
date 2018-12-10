@@ -77,6 +77,7 @@ const serverTsconfig = {
     module: "commonjs",
     moduleResolution: "node",
     outDir: "../.nextpress",
+    esModuleInterop: true,
     strict: true,
     noUnusedLocals: true,
     sourceMap: true,
