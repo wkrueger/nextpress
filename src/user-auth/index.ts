@@ -139,7 +139,7 @@ export class UserAuth<User extends BaseUser = BaseUser> {
         await this.sendMail({
           email: inp.email,
           subject: this._validationMailSubject(),
-          html: this._validationMailHTML({
+          html: await this._validationMailHTML({
             address: inp.email,
             validationLink: link
           })
@@ -199,7 +199,7 @@ export class UserAuth<User extends BaseUser = BaseUser> {
       await this.sendMail({
         email: inp.email,
         subject: this._resetPwdMailSubject(),
-        html: this._resetPwdMailHTML({
+        html: await this._resetPwdMailHTML({
           address: inp.email,
           validationLink: link
         })
@@ -459,13 +459,13 @@ export class UserAuth<User extends BaseUser = BaseUser> {
     }${this._passwordResetFormRoute()}?requestId=${encodeURIComponent(seq)}`
   }
 
-  _validationMailHTML(i: { address: string; validationLink: string }) {
+  async _validationMailHTML(i: { address: string; validationLink: string }) {
     return `<p>Hi! ${i.address}.</p>
       <p>Follow this link to validate your account: 
       <a href="${i.validationLink}">${i.validationLink}</a>.</p>`
   }
 
-  _resetPwdMailHTML(i: { address: string; validationLink: string }) {
+  async _resetPwdMailHTML(i: { address: string; validationLink: string }) {
     return `
       <p>Hello, ${i.address},
       </p><p>Follow this link to proceed your password reset.</p>
