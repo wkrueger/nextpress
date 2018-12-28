@@ -49,6 +49,7 @@ export declare class Server {
      * app.use's on the express app
      */
     protected setupGlobalMiddleware(expressApp: expressMod.Router): Promise<expressMod.Router>;
+    UserAuthClass: typeof UserAuthJwt;
     protected createAuthMw_Jwt(): expressMod.RequestHandler;
     /**
      * the next.config.js
