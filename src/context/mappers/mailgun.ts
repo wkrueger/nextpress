@@ -1,5 +1,7 @@
-import request = require("request")
+import fetch = require("isomorphic-fetch")
+import FormData = require("form-data")
 import { createContextMapper } from ".."
+import ono = require("ono")
 
 export const mailgunContext = createContextMapper({
   id: "default.mailgun",
@@ -13,34 +15,25 @@ export const mailgunContext = createContextMapper({
         apiKey: getKey("MAILGUN_API_KEY")!,
         async sendMail(inp: { email: string; subject: string; html: string; from?: string }) {
           let ctx = out.email
-          const body: any = await new Promise((res, rej) => {
-            request(
-              {
-                method: "POST",
-                auth: {
-                  user: "api",
-                  pass: ctx.apiKey
-                },
-                url: `https://api.mailgun.net/v3/${ctx.domain}/messages`,
-                form: {
-                  from: inp.from || ctx.from,
-                  to: inp.email,
-                  subject: inp.subject,
-                  text: inp.html,
-                  html: inp.html
-                }
-              },
-              (err, response, body) => {
-                if (err) return rej(err)
-                if (String(response.statusCode).charAt(0) !== "2") {
-                  console.error("mailgun error", body)
-                  return rej(Error("Failed while sending e-mail."))
-                }
-                res(body)
-              }
-            )
+          const fdata = {
+            from: inp.from || ctx.from,
+            to: inp.email,
+            subject: inp.subject,
+            text: inp.html,
+            html: inp.html
+          } as any
+          const form = new FormData()
+          Object.keys(fdata).forEach(key => form.append(key, fdata[key]))
+          const response = await fetch(`https://api.mailgun.net/v3/${ctx.domain}/messages`, {
+            method: "POST",
+            headers: {
+              authorization: `Basic ${Buffer.from("api:" + ctx.apiKey).toString("base64")}`
+            },
+            body: form as any
           })
-          return body
+          let json = await response.json()
+          if (!response.ok) throw ono(json, "Failed while sending email.")
+          return json
         }
       }
     }

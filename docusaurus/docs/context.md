@@ -117,6 +117,11 @@ import { knexContext } from "@proerd/nextpress/lib/context/mappers/knex"
 - Required vars: `"DB_NAME", "DB_USER", "DB_PASS"`
 - Optional vars: `"DB_HOST", "DB_CLIENT"`
 
+**Custom setup**
+
+If you need to set up custom knex constructor settings, use `customKnexContext(knexOpts)` instead of
+`knexContext`.
+
 **Notable exports:**
 
 ### init ({ migrations: Migration[] })

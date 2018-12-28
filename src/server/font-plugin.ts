@@ -1,3 +1,6 @@
+/**
+ * enhances the webpack config to add url-loader on fonts loaded through css
+ */
 export const fontPlugin = (nextConfig: any = {}) => {
   return Object.assign({}, nextConfig, {
     webpack(config: any, options: any) {

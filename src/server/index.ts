@@ -1,7 +1,6 @@
 ///<reference path="../../types/global.types.d.ts"/>
 import expressMod = require("express")
 import morgan = require("morgan")
-import jwt = require("jsonwebtoken")
 import { Server as NextServer } from "next"
 import rimraf = require("rimraf")
 import { promisify } from "util"
@@ -11,6 +10,8 @@ import helmet = require("helmet")
 import { setWithLanguage } from "../messages/messages"
 import { fontPlugin } from "./font-plugin"
 import http = require("http")
+import { UserAuthJwt } from "./user-auth-jwt"
+import cookieParser = require("cookie-parser")
 
 export type ExpressApp = ReturnType<typeof expressMod>
 declare const module: any
@@ -32,16 +33,17 @@ export class Server {
     useNextjs: true,
     useHelmet: true,
     jwtOptions: {
-      tokenHeader: "authorization",
+      //tokenHeader: "authorization",
       tokenDuration: 60 * 60 * 24 * 5 //5 days
     },
     bundleAnalyzer: {
       analyzeServer: false,
       analyzeBrowser: true
-    }
+    },
+    prebuilt: false
   }
 
-  useHMR() {
+  public useHMR() {
     const hmr = require("./hmr") as typeof import("./hmr")
     hmr.setServerHmr(this)
   }
@@ -49,8 +51,8 @@ export class Server {
   /**
    * all set, run
    */
-  async run() {
-    if (this.isProduction && this.options.useNextjs) {
+  public async run() {
+    if (this.isProduction && this.options.useNextjs && !this.options.prebuilt) {
       await this.buildForProduction()
     }
     this.expressApp = expressMod()
@@ -62,6 +64,7 @@ export class Server {
       this.nodeHttpServer.listen(this.ctx.website.port)
       console.log("Server running on " + this.ctx.website.port)
     } else {
+      //hmr setup
       let listeners = this.nodeHttpServer!.listeners("request")
       for (let x = 0; x < listeners.length; x++) {
         const listener = listeners[x]
@@ -74,9 +77,32 @@ export class Server {
   }
 
   /**
+   * this is meant to be overriden in order to set the server routes.
+   */
+  public async setupRoutes({ app }: { app: ExpressApp }): Promise<void> {
+    const builder = new RouterBuilder(this)
+    app.use(await builder.createHtmlRouter())
+  }
+
+  /**
+   * to be used if manually setting up a build flow
+   */
+  public async buildForProduction() {
+    console.log("Building for production...")
+    const nextBuild = require("next/dist/build").default
+    await promisify(rimraf)(resolve(this.ctx.projectRoot, ".next"))
+    await nextBuild(this.ctx.projectRoot, this.getNextjsConfig())
+    if (global.gc) {
+      global.gc()
+    }
+  }
+
+  // --- PROTECTED --- //
+
+  /**
    * app.use's on the express app
    */
-  async setupGlobalMiddleware(expressApp: expressMod.Router) {
+  protected async setupGlobalMiddleware(expressApp: expressMod.Router) {
     if (this.options.useNextjs) {
       this.getNextApp() //.prepare()
     }
@@ -88,6 +114,7 @@ export class Server {
       expressApp.use(compression())
     }
     if (this.isProduction) {
+      //serve static through express because cache headers.
       expressApp.use(
         "/static",
         expressMod.static(resolve(this.ctx.projectRoot, "static"), {
@@ -96,6 +123,7 @@ export class Server {
       )
     }
     if (this.ctx.jwt) {
+      expressApp.use(cookieParser())
       const authMw = this.createAuthMw_Jwt()
       expressApp.use(authMw)
     }
@@ -109,45 +137,22 @@ export class Server {
     return expressApp
   }
 
-  _nextApp?: NextServer
-  getNextApp() {
-    if (!this._nextApp) {
-      if (!this.options.useNextjs) {
-        throw Error("options.useNextJs is set to false.")
-      }
-      const nextjs = require("next") as typeof import("next")
-      this._nextApp = nextjs({
-        dev: !this.isProduction,
-        dir: this.ctx.projectRoot,
-        conf: this.getNextjsConfig()
+  UserAuthClass = UserAuthJwt
+  protected createAuthMw_Jwt() {
+    const out: expressMod.RequestHandler = (req, res, next) => {
+      req.nextpressAuth = new this.UserAuthClass(req, res, {
+        durationSeconds: this.options.jwtOptions.tokenDuration,
+        secret: this.ctx.jwt.secret
       })
-      this._nextApp.prepare()
+      next()
     }
-    return this._nextApp
-  }
-
-  async buildForProduction() {
-    console.log("Building for production...")
-    const nextBuild = require("next/dist/build").default
-    await promisify(rimraf)(resolve(this.ctx.projectRoot, ".next"))
-    await nextBuild(this.ctx.projectRoot, this.getNextjsConfig())
-    if (global.gc) {
-      global.gc()
-    }
-  }
-
-  /**
-   * this is meant to be overriden in order to set the server routes.
-   */
-  async setupRoutes({ app }: { app: ExpressApp }): Promise<void> {
-    const builder = new RouterBuilder(this)
-    app.use(await builder.createHtmlRouter())
+    return out
   }
 
   /**
    * the next.config.js
    */
-  getNextjsConfig() {
+  protected getNextjsConfig() {
     const withCSS = require("@zeit/next-css")
     const withSass = require("@zeit/next-sass")
     const LodashPlugin = require("lodash-webpack-plugin")
@@ -175,84 +180,21 @@ export class Server {
     return fontPlugin(out)
   }
 
-  createAuthMw_Jwt() {
-    const out: expressMod.RequestHandler = (req, _, next) => {
-      req.nextpressAuth = new UserAuthJwt(req, {
-        headerKey: this.options.jwtOptions.tokenHeader,
-        durationSeconds: this.options.jwtOptions.tokenDuration,
-        secret: this.ctx.jwt.secret
+  _nextApp?: NextServer
+  public getNextApp() {
+    if (!this._nextApp) {
+      if (!this.options.useNextjs) {
+        throw Error("options.useNextJs is set to false.")
+      }
+      const nextjs = require("next") as typeof import("next")
+      this._nextApp = nextjs({
+        dev: !this.isProduction,
+        dir: this.ctx.projectRoot,
+        conf: this.getNextjsConfig()
       })
-      next()
+      this._nextApp.prepare()
     }
-    return out
-  }
-}
-
-interface User {
-  id: number
-  email: string
-}
-
-export class UserAuthSession {
-  constructor(public req: any) {}
-
-  async getUser(): Promise<User | undefined> {
-    return (this.req.session && this.req.session.user) || undefined
-  }
-
-  async setUser(user: User): Promise<string> {
-    if (!this.req.session) {
-      throw Error("Session not present.")
-    }
-    this.req.session.user = user
-    return ""
-  }
-
-  async logout() {
-    await new Promise(res => {
-      this.req.session.destroy(res)
-    })
-  }
-}
-
-export class UserAuthJwt implements UserAuthSession {
-  constructor(
-    public req: any,
-    private opts: { headerKey: string; secret: string; durationSeconds: number }
-  ) {}
-
-  private _user: User | undefined
-
-  async getUser() {
-    if (this._user) return this._user
-    const token: string = this.req.headers[this.opts.headerKey.toLowerCase()]
-    if (!token || token === "undefined") return undefined
-    const decoded = await new Promise<any>((resolve, reject) => {
-      jwt.verify(token, this.opts.secret, (err: any, resp) => {
-        if (err) {
-          err.statusCode = 401
-          return reject(err)
-        }
-        return resolve(resp)
-      })
-    })
-    return decoded
-  }
-
-  async setUser(user: User) {
-    if (this._user) throw Error("User already set.")
-    const token = await new Promise<string>((resolve, reject) => {
-      jwt.sign(user, this.opts.secret, { expiresIn: this.opts.durationSeconds }, (err, token) => {
-        if (err) return reject(err)
-        return resolve(token)
-      })
-    })
-    this._user = user
-    return token
-  }
-
-  async logout() {
-    this._user = undefined
+    return this._nextApp
   }
 }
 
@@ -266,7 +208,7 @@ if (!process.listenerCount("unhandledRejection")) {
 declare global {
   namespace Express {
     interface Request {
-      nextpressAuth: UserAuthSession | UserAuthJwt
+      nextpressAuth: UserAuthJwt
     }
   }
 }
