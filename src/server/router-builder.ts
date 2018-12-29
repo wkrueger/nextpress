@@ -10,24 +10,9 @@ export class RouterBuilder {
   static yup = yup
   static express = expressMod
 
-  /**
-   * Wraps request handler in try/catch/next
-   */
-  static createHandler = (fn: expressMod.RequestHandler): expressMod.RequestHandler => async (
-    req,
-    res,
-    next,
-  ) => {
-    try {
-      await fn(req, res, next)
-    } catch (err) {
-      next(err)
-    }
-  }
-
   static appendJsonRoutesFromDict<Dict extends Record<string, RouteOpts>>(
     router: expressMod.Router,
-    setup: (i: typeof RouteDictHelper) => Dict,
+    setup: (i: typeof RouteDictHelper) => Dict
   ) {
     const routeDict = setup(RouteDictHelper)
     Object.keys(routeDict).forEach(key => {
@@ -63,11 +48,15 @@ export class RouterBuilder {
     })
   }
 
-  nextMw = RouterBuilder.createHandler((req, res) => {
-    const _nextHandle = this.server.getNextApp().getRequestHandler()
-    const parsedUrl = urlparse(req.url!, true)
-    _nextHandle(req, res, parsedUrl)
-  })
+  nextMw: expressMod.RequestHandler = (req, res, next) => {
+    try {
+      const _nextHandle = this.server.getNextApp().getRequestHandler()
+      const parsedUrl = urlparse(req.url!, true)
+      _nextHandle(req, res, parsedUrl)
+    } catch (err) {
+      next(err)
+    }
+  }
 
   /**
    * creates a router suited for next.js html/react routes;
@@ -76,16 +65,17 @@ export class RouterBuilder {
    */
   async createHtmlRouter(
     callback?: ({ router }: { router: expressMod.Router }) => Promise<void>,
-    options: { noNextJs?: boolean } = {},
+    options: { noNextJs?: boolean } = {}
   ) {
     const router = expressMod.Router()
     if (callback) {
       await callback({ router })
     }
+    //se o erro ocorrer antes de chegar ao next.js
     if (this.server.options.errorRoute) {
       const errorMw: expressMod.ErrorRequestHandler = (err, req, res, next) => {
         this.server.getNextApp().render(req, res, this.server.options.errorRoute, {
-          message: String(err),
+          message: String(err)
         })
       }
       router.use(errorMw)
@@ -104,9 +94,9 @@ export class RouterBuilder {
     const router = expressMod.Router()
     router.use(expressMod.json())
     await callback({ router })
-    router.use(function apiNotFound(_, __, next) {
-      next(ono({ statusCode: 404 }, "Path not found (404)."))
-    })
+    // router.use(function apiNotFound(_, __, next) {
+    //   next(ono({ statusCode: 404 }, "Path not found (404)."))
+    // })
     router.use(this.jsonErrorHandler)
     return router
   }
@@ -123,7 +113,7 @@ export class RouterBuilder {
    ```
    */
   async rpcishJsonRouter<Dict extends Record<string, RouteOpts>>(
-    setup: (i: typeof RouteDictHelper) => Dict,
+    setup: (i: typeof RouteDictHelper) => Dict
   ) {
     return this.createJsonRouter(async ({ router }) => {
       return RouterBuilder.appendJsonRoutesFromDict(router, setup)
@@ -134,7 +124,7 @@ export class RouterBuilder {
     err: any,
     _req: expressMod.Request,
     res: expressMod.Response,
-    next: expressMod.NextFunction,
+    next: expressMod.NextFunction
   ) {
     try {
       console.error(err)
@@ -180,7 +170,7 @@ export const route = <Opts extends RouteOpts>(opts: Opts = {} as any) => {
   return {
     handler: (fn: HandlerType<Opts>): RouteOpts => {
       return Object.assign(opts, { handler: fn })
-    },
+    }
   }
 }
 
@@ -212,7 +202,7 @@ export const validateRequest = (opts: RouteOpts["validation"]) => {
 
 export const RouteDictHelper = {
   route,
-  yup,
+  yup
 }
 
 type UnwrapSchema<T> = T extends yup.ObjectSchema<infer R> ? R : unknown

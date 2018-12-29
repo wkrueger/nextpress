@@ -6,10 +6,6 @@ export declare class RouterBuilder {
     constructor(server: Server);
     static yup: typeof yup;
     static express: typeof expressMod;
-    /**
-     * Wraps request handler in try/catch/next
-     */
-    static createHandler: (fn: expressMod.RequestHandler) => expressMod.RequestHandler;
     static appendJsonRoutesFromDict<Dict extends Record<string, RouteOpts>>(router: expressMod.Router, setup: (i: typeof RouteDictHelper) => Dict): void;
     nextMw: expressMod.RequestHandler;
     /**
