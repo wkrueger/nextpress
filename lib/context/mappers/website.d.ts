@@ -11,7 +11,6 @@ export declare const websiteContext: {
             baseUrl: string;
             logRequests: boolean;
             bundleAnalyzer: boolean;
-            useCompression: boolean;
             language: string;
         };
     };

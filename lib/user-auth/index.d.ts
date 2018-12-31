@@ -63,10 +63,10 @@ export declare class UserAuth<User extends BaseUser = BaseUser> {
      * this counts all the requests this server receives
      */
     _getRequestThrottleMws(): {
-        createUser: RequestHandler;
-        login: RequestHandler;
-        requestReset: RequestHandler;
-        performReset: RequestHandler;
+        createUser: any;
+        login: any;
+        requestReset: any;
+        performReset: any;
     };
     /**
      * overrideable
@@ -97,8 +97,8 @@ export declare class UserAuth<User extends BaseUser = BaseUser> {
         "/logout": import("../server/router-builder").RouteOpts;
     };
     userRoutes(routerBuilder: RouterBuilder): Promise<{
-        json: import("express-serve-static-core").Router;
-        html: import("express-serve-static-core").Router;
+        json: any;
+        html: any;
     }>;
     _renderSimpleMessage(server: Server, req: any, res: any, title: string, message: string, type: string): Promise<void>;
     /**

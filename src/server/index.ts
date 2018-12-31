@@ -1,27 +1,21 @@
 ///<reference path="../../types/global.types.d.ts"/>
-import expressMod = require("express")
-import morgan = require("morgan")
 import { Server as NextServer } from "next"
 import rimraf = require("rimraf")
 import { promisify } from "util"
 import { resolve } from "path"
-import { RouterBuilder } from "./router-builder"
-import helmet = require("helmet")
 import { setWithLanguage } from "../messages/messages"
 import { fontPlugin } from "./font-plugin"
 import http = require("http")
 import { UserAuthJwt } from "./user-auth-jwt"
-import cookieParser = require("cookie-parser")
-
-export type ExpressApp = ReturnType<typeof expressMod>
-declare const module: any
+import * as Fastify from "fastify"
+import { formatError } from "../other/error"
 
 export class Server {
   nodeHttpServer?: http.Server
-  expressApp?: ExpressApp
   isProduction = process.env.NODE_ENV === "production"
+  fastify!: Fastify.FastifyInstance
 
-  constructor(public ctx: Nextpress.Context, public opts: { tag?: string } = {}) {
+  constructor(public ctx: Nextpress.Context) {
     if (!ctx.loadedContexts.has("default.website")) {
       throw Error("Server requires the default.website context to be used.")
     }
@@ -55,34 +49,42 @@ export class Server {
     if (this.isProduction && this.options.useNextjs && !this.options.prebuilt) {
       await this.buildForProduction()
     }
-    this.expressApp = expressMod()
-    ;(this.expressApp as any).__nextpress = true
-    await this.setupGlobalMiddleware(this.expressApp)
-    await this.setupRoutes({ app: this.expressApp })
-    if (!this.nodeHttpServer) {
-      this.nodeHttpServer = http.createServer(this.expressApp)
-      this.nodeHttpServer.listen(this.ctx.website.port)
-      console.log("Server running on " + this.ctx.website.port)
-    } else {
+    const fastifyOpts: any = { logger: Boolean(this.ctx.website.logRequests) }
+    if (this.nodeHttpServer) {
       //hmr setup
-      let listeners = this.nodeHttpServer!.listeners("request")
-      for (let x = 0; x < listeners.length; x++) {
-        const listener = listeners[x]
-        if ((listener as any).__nextpress) {
-          this.nodeHttpServer.removeListener("request", listener as any)
+      fastifyOpts.serverFactory = (handler: any, opts: any) => {
+        let listeners = this.nodeHttpServer!.listeners("request")
+        for (let x = 0; x < listeners.length; x++) {
+          const listener = listeners[x]
+          if ((listener as any).__nextpress) {
+            this.nodeHttpServer!.removeListener("request", listener as any)
+          }
         }
+        handler.__nextpress = true
+        this.nodeHttpServer!.addListener("request", handler)
+        return this.nodeHttpServer
       }
-      this.nodeHttpServer.addListener("request", this.expressApp)
     }
+    this.fastify = Fastify(fastifyOpts)
+    //;(this.expressApp as any).__nextpress = true
+    await this.setupGlobalMiddleware()
+    await this.setupRoutes()
+    if (this.options.useNextjs) {
+      this.setNextjsMiddleware()
+    }
+    //first load
+    let ret: Promise<any> | undefined
+    if (!this.nodeHttpServer) {
+      ret = this.fastify.listen(this.ctx.website.port)
+    }
+    this.nodeHttpServer = this.fastify.server
+    return ret
   }
 
   /**
    * this is meant to be overriden in order to set the server routes.
    */
-  public async setupRoutes({ app }: { app: ExpressApp }): Promise<void> {
-    const builder = new RouterBuilder(this)
-    app.use(await builder.createHtmlRouter())
-  }
+  public async setupRoutes() {}
 
   /**
    * to be used if manually setting up a build flow
@@ -102,51 +104,41 @@ export class Server {
   /**
    * app.use's on the express app
    */
-  protected async setupGlobalMiddleware(expressApp: expressMod.Router) {
-    if (this.options.useNextjs) {
-      this.getNextApp() //.prepare()
-    }
-    if (this.ctx.website.logRequests) {
-      expressApp.use(morgan("short"))
-    }
-    if (this.ctx.website.useCompression && this.isProduction) {
-      const compression = require("compression")
-      expressApp.use(compression())
-    }
-    if (this.isProduction) {
-      //serve static through express because cache headers.
-      expressApp.use(
-        "/static",
-        expressMod.static(resolve(this.ctx.projectRoot, "static"), {
-          maxAge: "30d"
-        })
-      )
-    }
+  protected async setupGlobalMiddleware() {
+    const fastify = this.fastify
+    fastify.setErrorHandler((error: any, req, res) => {
+      res
+        .status(error.statusCode || 500)
+        .send(error ? formatError(error) : { error: { message: "Internal server error." } })
+    })
+    //serve static through express because cache headers.
+    fastify.register(require("fastify-static"), {
+      root: this.ctx.pathFromRoot("static"),
+      prefix: "/static/",
+      maxAge: "30d"
+    })
     if (this.ctx.jwt) {
-      expressApp.use(cookieParser())
-      const authMw = this.createAuthMw_Jwt()
-      expressApp.use(authMw)
+      fastify.register(require("fastify-cookie"))
+      this.createAuthMw_Jwt()
     }
-    const robotsPath = resolve(this.ctx.projectRoot, "static", "robots.txt")
-    expressApp.get("/robots.txt", (_, response) => {
-      response.sendFile(robotsPath)
+    fastify.get("/robots.txt", function(req, reply) {
+      reply.sendFile("robots.txt")
     })
     if (this.options.useHelmet) {
-      expressApp.use(helmet())
+      fastify.register(require("fastify-helmet"))
     }
-    return expressApp
   }
 
   UserAuthClass = UserAuthJwt
   protected createAuthMw_Jwt() {
-    const out: expressMod.RequestHandler = (req, res, next) => {
+    this.fastify.decorateRequest("nextpressAuth", {})
+    this.fastify.addHook("preHandler", (req, res, next) => {
       req.nextpressAuth = new this.UserAuthClass(req, res, {
         durationSeconds: this.options.jwtOptions.tokenDuration,
         secret: this.ctx.jwt.secret
       })
       next()
-    }
-    return out
+    })
   }
 
   /**
@@ -196,6 +188,11 @@ export class Server {
     }
     return this._nextApp
   }
+
+  private setNextjsMiddleware() {
+    const handler = (req: any, res: any) => this.getNextApp().getRequestHandler()(req, res)
+    this.fastify.use(handler)
+  }
 }
 
 if (!process.listenerCount("unhandledRejection")) {
@@ -205,10 +202,8 @@ if (!process.listenerCount("unhandledRejection")) {
   })
 }
 
-declare global {
-  namespace Express {
-    interface Request {
-      nextpressAuth: UserAuthJwt
-    }
+declare module "fastify" {
+  interface FastifyRequest {
+    nextpressAuth: UserAuthJwt
   }
 }

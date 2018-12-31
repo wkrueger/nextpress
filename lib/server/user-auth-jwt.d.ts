@@ -1,13 +1,13 @@
-import express = require("express");
+import Fastify = require("fastify");
 interface User {
     id: number;
     email: string;
 }
 export declare class UserAuthJwt {
-    req: express.Request;
-    resp: express.Response;
+    req: Fastify.FastifyRequest;
+    resp: Fastify.FastifyReply<any>;
     private opts;
-    constructor(req: express.Request, resp: express.Response, opts: {
+    constructor(req: Fastify.FastifyRequest, resp: Fastify.FastifyReply<any>, opts: {
         secret: string;
         durationSeconds: number;
     });

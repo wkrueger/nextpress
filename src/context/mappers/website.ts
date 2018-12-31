@@ -7,7 +7,6 @@ export const websiteContext = createContextMapper({
     "WEBSITE_BASEURL",
     "WEBSITE_LOG_REQUESTS",
     "WEBSITE_BUNDLE_ANALYZER",
-    "WEBSITE_COMPRESSION",
     "WEBSITE_LANGUAGE"
   ],
   envContext({ getKey }) {
@@ -18,7 +17,6 @@ export const websiteContext = createContextMapper({
         baseUrl: getKey("WEBSITE_BASEURL") || "/",
         logRequests: Boolean(getKey("WEBSITE_LOG_REQUESTS")),
         bundleAnalyzer: Boolean(getKey("WEBSITE_BUNDLE_ANALYZER")),
-        useCompression: Boolean(getKey("WEBSITE_COMPRESSION")),
         language: getKey("WEBSITE_LANGUAGE") || "en"
       }
     }

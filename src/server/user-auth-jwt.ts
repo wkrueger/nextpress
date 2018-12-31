@@ -1,5 +1,5 @@
 import jwt = require("jsonwebtoken")
-import express = require("express")
+import Fastify = require("fastify")
 
 interface User {
   id: number
@@ -7,8 +7,8 @@ interface User {
 }
 export class UserAuthJwt {
   constructor(
-    public req: express.Request,
-    public resp: express.Response,
+    public req: Fastify.FastifyRequest,
+    public resp: Fastify.FastifyReply<any>,
     private opts: {
       //headerKey: string
       secret: string
@@ -55,16 +55,16 @@ export class UserAuthJwt {
       })
     })
     this._user = user
-    if (!this.resp.headersSent) {
-      this.resp.set("Set-Cookie", `user_auth=${token}; Max-Age=${this.opts.durationSeconds};`)
+    if (!this.resp.sent) {
+      this.resp.setCookie("user_auth", token, { maxAge: this.opts.durationSeconds })
     }
     return token
   }
 
   async logout() {
     this._user = undefined
-    if (!this.resp.headersSent) {
-      this.resp.set("Set-Cookie", `user_auth=;`)
+    if (!this.resp.sent) {
+      this.resp.setCookie("user_auth", "")
     }
   }
 }

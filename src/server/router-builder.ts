@@ -1,7 +1,6 @@
 import { Server } from "."
 import { parse as urlparse } from "url"
 import expressMod = require("express")
-import ono = require("ono")
 import yup = require("yup")
 
 export class RouterBuilder {
@@ -48,15 +47,15 @@ export class RouterBuilder {
     })
   }
 
-  nextMw: expressMod.RequestHandler = (req, res, next) => {
-    try {
-      const _nextHandle = this.server.getNextApp().getRequestHandler()
-      const parsedUrl = urlparse(req.url!, true)
-      _nextHandle(req, res, parsedUrl)
-    } catch (err) {
-      next(err)
-    }
-  }
+  // nextMw: expressMod.RequestHandler = (req, res, next) => {
+  //   try {
+  //     const _nextHandle = this.server.getNextApp().getRequestHandler()
+  //     const parsedUrl = urlparse(req.url!, true)
+  //     _nextHandle(req, res, parsedUrl)
+  //   } catch (err) {
+  //     next(err)
+  //   }
+  // }
 
   /**
    * creates a router suited for next.js html/react routes;
@@ -80,9 +79,9 @@ export class RouterBuilder {
       }
       router.use(errorMw)
     }
-    if (!options.noNextJs) {
-      router.use(this.nextMw)
-    }
+    // if (!options.noNextJs) {
+    //   router.use(this.nextMw)
+    // }
     return router
   }
 
