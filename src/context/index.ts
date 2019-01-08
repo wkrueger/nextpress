@@ -29,7 +29,7 @@ export function ContextFactory(i: {
   const pluginOptional = (i.mappers || []).reduce(
     (out, item) => {
       const optionalKeys = item.optionalKeys.map(key => prefixUpper + key)
-      return [...out, ...item.optionalKeys]
+      return [...out, ...optionalKeys]
     },
     [] as string[]
   )
