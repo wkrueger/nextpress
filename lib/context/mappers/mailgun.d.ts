@@ -1,3 +1,4 @@
+/// <reference types="node" />
 export declare const mailgunContext: {
     id: string;
     envKeys: string[];
@@ -13,6 +14,13 @@ export declare const mailgunContext: {
                 email: string;
                 subject: string;
                 html: string;
+                attachment?: {
+                    value: NodeJS.ReadStream;
+                    options: {
+                        filename: string;
+                        contentType: string;
+                    };
+                }[] | undefined;
             }): Promise<any>;
         };
     };

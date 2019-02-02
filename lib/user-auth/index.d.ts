@@ -1,3 +1,4 @@
+/// <reference types="node" />
 import Yup = require("yup");
 import { Server } from "../server";
 import { RouterBuilder, RouteDictHelper } from "../server/router-builder";
@@ -28,6 +29,13 @@ export declare class UserAuth<User extends BaseUser = BaseUser> {
         email: string;
         subject: string;
         html: string;
+        attachment?: {
+            value: NodeJS.ReadStream;
+            options: {
+                filename: string;
+                contentType: string;
+            };
+        }[] | undefined;
     }) => Promise<any>) | undefined;
     userStore: UserStore<User>;
     options: {

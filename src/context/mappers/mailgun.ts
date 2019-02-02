@@ -11,7 +11,15 @@ export const mailgunContext = createContextMapper({
         from: getKey("MAILGUN_FROM")!,
         domain: getKey("MAILGUN_DOMAIN")!,
         apiKey: getKey("MAILGUN_API_KEY")!,
-        async sendMail(inp: { email: string; subject: string; html: string }) {
+        async sendMail(inp: {
+          email: string
+          subject: string
+          html: string
+          attachment?: {
+            value: NodeJS.ReadStream
+            options: { filename: string; contentType: string }
+          }[]
+        }) {
           let ctx = out.email
           const body: any = await new Promise((res, rej) => {
             request(
@@ -22,12 +30,13 @@ export const mailgunContext = createContextMapper({
                   pass: ctx.apiKey
                 },
                 url: `https://api.mailgun.net/v3/${ctx.domain}/messages`,
-                form: {
+                formData: {
                   from: ctx.from,
                   to: inp.email,
                   subject: inp.subject,
                   text: inp.html,
-                  html: "<html>" + inp.html + "</html>"
+                  html: "<html>" + inp.html + "</html>",
+                  attachment: inp.attachment
                 }
               },
               (err, response, body) => {
