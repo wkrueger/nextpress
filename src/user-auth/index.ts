@@ -142,7 +142,8 @@ export class UserAuth<User extends BaseUser = BaseUser> {
           html: await this._validationMailHTML({
             address: inp.email,
             validationLink: link
-          })
+          }),
+          attachment: (await this._validationMailAttachment()) || undefined
         })
       } catch (err) {
         //fixme use transaction
@@ -464,6 +465,17 @@ export class UserAuth<User extends BaseUser = BaseUser> {
       <p>Follow this link to validate your account: 
       <a href="${i.validationLink}">${i.validationLink}</a>.</p>`
   }
+
+  async _validationMailAttachment(): Promise<
+    | void
+    | {
+        value: NodeJS.ReadStream
+        options: {
+          filename: string
+          contentType: string
+        }
+      }[]
+  > {}
 
   async _resetPwdMailHTML(i: { address: string; validationLink: string }) {
     return `

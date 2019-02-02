@@ -124,6 +124,13 @@ export declare class UserAuth<User extends BaseUser = BaseUser> {
         address: string;
         validationLink: string;
     }): Promise<string>;
+    _validationMailAttachment(): Promise<void | {
+        value: NodeJS.ReadStream;
+        options: {
+            filename: string;
+            contentType: string;
+        };
+    }[]>;
     _resetPwdMailHTML(i: {
         address: string;
         validationLink: string;
