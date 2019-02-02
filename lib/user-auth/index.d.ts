@@ -115,11 +115,11 @@ export declare class UserAuth<User extends BaseUser = BaseUser> {
     _validationMailHTML(i: {
         address: string;
         validationLink: string;
-    }): string;
+    }): Promise<string>;
     _resetPwdMailHTML(i: {
         address: string;
         validationLink: string;
-    }): string;
+    }): Promise<string>;
     _resetPwdMailSubject(): string;
     _validationMailSubject(): string;
 }
