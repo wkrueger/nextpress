@@ -383,23 +383,17 @@ export class UserAuth<User extends BaseUser = BaseUser> {
             const hash = req.query.seq
             let user = await User.validateHash(hash)
             req.nextpressAuth.setUser({ id: user.id, email: user.email })
-            this._renderSimpleMessage(
-              routerBuilder.server,
-              req,
-              res,
-              messages.success,
-              messages.user_validated,
-              "VALIDATION"
-            )
+            this._renderSimpleMessage(routerBuilder.server, req, res, {
+              title: messages.success,
+              message: messages.user_validated,
+              type: "VALIDATION"
+            })
           } catch (err) {
-            this._renderSimpleMessage(
-              routerBuilder.server,
-              req,
-              res,
-              messages.error,
-              err.message,
-              "ERROR"
-            )
+            this._renderSimpleMessage(routerBuilder.server, req, res, {
+              title: messages.error,
+              message: err.message,
+              type: "ERROR"
+            })
           }
         })
 
@@ -409,7 +403,11 @@ export class UserAuth<User extends BaseUser = BaseUser> {
               requestId: req.query.requestId
             })
           } catch (err) {
-            this._renderSimpleMessage(routerBuilder.server, req, res, "Error", err.message, "ERROR")
+            this._renderSimpleMessage(routerBuilder.server, req, res, {
+              title: "Error",
+              message: err.message,
+              type: "ERROR"
+            })
           }
         })
       },
@@ -423,14 +421,18 @@ export class UserAuth<User extends BaseUser = BaseUser> {
     server: Server,
     req: any,
     res: any,
-    title: string,
-    message: string,
-    type: string
+    opts: {
+      title: string
+      message: string
+      type: string
+      code?: string
+    }
   ) {
     return server.getNextApp().render(req, res, "/auth/message", {
-      title: title,
-      content: message,
-      type
+      title: opts.title,
+      content: opts.message,
+      type: opts.type,
+      code: opts.code
     })
   }
 
