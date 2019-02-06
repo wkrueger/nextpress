@@ -16,6 +16,8 @@ export type ExpressApp = ReturnType<typeof expressMod>
 declare const module: any
 
 export class Server {
+  static __tag__ = "SERVER"
+
   nodeHttpServer?: http.Server
   expressApp?: ExpressApp
   isProduction = process.env.NODE_ENV === "production"
@@ -41,6 +43,12 @@ export class Server {
     }
   }
 
+  static getDefaultContext(): Nextpress.Context {
+    throw Error(
+      "No default context set. Please declare a static getDefaultContext() on the server class."
+    )
+  }
+
   useHMR() {
     const hmr = require("./hmr") as typeof import("./hmr")
     hmr.setServerHmr(this)
@@ -50,9 +58,9 @@ export class Server {
    * all set, run
    */
   async run() {
-    if (this.isProduction && this.options.useNextjs) {
-      await this.buildForProduction()
-    }
+    // if (this.isProduction && this.options.useNextjs && !this.ctx.website.isPrebuilt) {
+    //   await this.buildForProduction()
+    // }
     this.expressApp = expressMod()
     ;(this.expressApp as any).__nextpress = true
     await this.setupGlobalMiddleware(this.expressApp)

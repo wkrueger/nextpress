@@ -107,7 +107,12 @@ export declare class UserAuth<User extends BaseUser = BaseUser> {
         json: import("express-serve-static-core").Router;
         html: import("express-serve-static-core").Router;
     }>;
-    _renderSimpleMessage(server: Server, req: any, res: any, title: string, message: string, type: string): Promise<void>;
+    _renderSimpleMessage(server: Server, req: any, res: any, opts: {
+        title: string;
+        message: string;
+        type: string;
+        code?: string;
+    }): Promise<void>;
     /**
      * Overrideable.
      * The route to be used for user creation validation email.

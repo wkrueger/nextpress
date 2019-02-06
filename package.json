@@ -1,6 +1,6 @@
 {
   "name": "@proerd/nextpress",
-  "version": "2.0.0-dev31",
+  "version": "2.0.0-dev32",
   "main": "lib/index.js",
   "typings": "lib/index.d.ts",
   "dependencies": {
@@ -16,6 +16,7 @@
     "@types/knex": "*",
     "@types/next": "*",
     "@types/request": "*",
+    "@types/shelljs": "^0.8.2",
     "@types/uuid": "*",
     "@types/yup": "*",
     "@zeit/next-bundle-analyzer": "^0.1.2",
@@ -47,6 +48,7 @@
     "ono": "^4.0.5",
     "request": "^2.87.0",
     "rimraf": "^2.6.2",
+    "shelljs": "^0.8.3",
     "start-server-webpack-plugin": "^2.2.5",
     "ts-jest": "^23.0.1",
     "url-loader": "^1.1.2",

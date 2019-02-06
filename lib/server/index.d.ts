@@ -9,6 +9,7 @@ export declare class Server {
     opts: {
         tag?: string;
     };
+    static __tag__: string;
     nodeHttpServer?: http.Server;
     expressApp?: ExpressApp;
     isProduction: boolean;
@@ -28,6 +29,7 @@ export declare class Server {
             analyzeBrowser: boolean;
         };
     };
+    static getDefaultContext(): Nextpress.Context;
     useHMR(): void;
     /**
      * all set, run

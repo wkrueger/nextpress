@@ -8,6 +8,7 @@ export const websiteContext = createContextMapper({
     "WEBSITE_BUNDLE_ANALYZER",
     "WEBSITE_COMPRESSION",
     "WEBSITE_LANGUAGE"
+    //"WEBSITE_IS_PREBUILT"
   ],
   envContext({ getKey }) {
     return {
@@ -19,6 +20,7 @@ export const websiteContext = createContextMapper({
         bundleAnalyzer: Boolean(getKey("WEBSITE_BUNDLE_ANALYZER")),
         useCompression: Boolean(getKey("WEBSITE_COMPRESSION")),
         language: getKey("WEBSITE_LANGUAGE") || "en"
+        //isPrebuilt: Boolean(getKey("WEBSITE_IS_PREBUILT"))
       }
     }
   }
