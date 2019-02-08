@@ -8,7 +8,8 @@
     "strict": true,
     "jsx": "react",
     "pretty": false,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "newLine": "LF"
   },
   "include": ["src", "types"]
 }
