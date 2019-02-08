@@ -15,7 +15,7 @@ if (args.scaffold) {
 if (args.prebuild) {
   prebuild()
 }
-if (args.prodRun) {
+if (args.prodRun || args.run) {
   prodRun()
 }
 

@@ -21,6 +21,17 @@ export const mailgunContext = createContextMapper({
           }[]
         }) {
           let ctx = out.email
+          let formKey = inp.attachment && inp.attachment.length ? "formData" : "form"
+          let formData: any = {
+            from: ctx.from,
+            to: inp.email,
+            subject: inp.subject,
+            text: inp.html,
+            html: "<html>" + inp.html + "</html>"
+          }
+          if (inp.attachment && inp.attachment.length) {
+            formData.attachment = inp.attachment
+          }
           const body: any = await new Promise((res, rej) => {
             request(
               {
@@ -30,14 +41,7 @@ export const mailgunContext = createContextMapper({
                   pass: ctx.apiKey
                 },
                 url: `https://api.mailgun.net/v3/${ctx.domain}/messages`,
-                formData: {
-                  from: ctx.from,
-                  to: inp.email,
-                  subject: inp.subject,
-                  text: inp.html,
-                  html: "<html>" + inp.html + "</html>",
-                  attachment: inp.attachment
-                }
+                [formKey]: formData
               },
               (err, response, body) => {
                 if (err) return rej(err)
