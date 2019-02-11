@@ -16,7 +16,7 @@ export class RouterBuilder {
   static createHandler = (fn: expressMod.RequestHandler): expressMod.RequestHandler => async (
     req,
     res,
-    next,
+    next
   ) => {
     try {
       await fn(req, res, next)
@@ -27,7 +27,7 @@ export class RouterBuilder {
 
   static appendJsonRoutesFromDict<Dict extends Record<string, RouteOpts>>(
     router: expressMod.Router,
-    setup: (i: typeof RouteDictHelper) => Dict,
+    setup: (i: typeof RouteDictHelper) => Dict
   ) {
     const routeDict = setup(RouteDictHelper)
     Object.keys(routeDict).forEach(key => {
@@ -76,7 +76,7 @@ export class RouterBuilder {
    */
   async createHtmlRouter(
     callback?: ({ router }: { router: expressMod.Router }) => Promise<void>,
-    options: { noNextJs?: boolean } = {},
+    options: { noNextJs?: boolean } = {}
   ) {
     const router = expressMod.Router()
     if (callback) {
@@ -85,7 +85,7 @@ export class RouterBuilder {
     if (this.server.options.errorRoute) {
       const errorMw: expressMod.ErrorRequestHandler = (err, req, res, next) => {
         this.server.getNextApp().render(req, res, this.server.options.errorRoute, {
-          message: String(err),
+          message: String(err)
         })
       }
       router.use(errorMw)
@@ -123,7 +123,7 @@ export class RouterBuilder {
    ```
    */
   async rpcishJsonRouter<Dict extends Record<string, RouteOpts>>(
-    setup: (i: typeof RouteDictHelper) => Dict,
+    setup: (i: typeof RouteDictHelper) => Dict
   ) {
     return this.createJsonRouter(async ({ router }) => {
       return RouterBuilder.appendJsonRoutesFromDict(router, setup)
@@ -134,10 +134,12 @@ export class RouterBuilder {
     err: any,
     _req: expressMod.Request,
     res: expressMod.Response,
-    next: expressMod.NextFunction,
+    next: expressMod.NextFunction
   ) {
     try {
-      console.error(err)
+      if (err && !err.noLog) {
+        console.error(err)
+      }
       if (err.sql && !err.statusCode) {
         err.message = "DB error."
       }
@@ -180,7 +182,7 @@ export const route = <Opts extends RouteOpts>(opts: Opts = {} as any) => {
   return {
     handler: (fn: HandlerType<Opts>): RouteOpts => {
       return Object.assign(opts, { handler: fn })
-    },
+    }
   }
 }
 
@@ -212,7 +214,7 @@ export const validateRequest = (opts: RouteOpts["validation"]) => {
 
 export const RouteDictHelper = {
   route,
-  yup,
+  yup
 }
 
 type UnwrapSchema<T> = T extends yup.ObjectSchema<infer R> ? R : unknown

@@ -26,7 +26,7 @@ export abstract class UserStore<User extends BaseUser> {
       validationHash: string | null
       validationExpires: Date | null
     },
-    extra: Partial<User>,
+    extra: Partial<User>
   ): Promise<number>
   abstract deleteUserId(id: number): Promise<void>
   abstract queryUserByValidationHash(hash: string): Promise<User | undefined>
@@ -82,7 +82,7 @@ export class KnexStore<User extends BaseUser> extends UserStore<User> {
             .notNullable()
         })
         await trx.table(this.userTableName).update({
-          username: trx.raw("??", ["email"]),
+          username: trx.raw("??", ["email"])
         })
       }
 
@@ -124,7 +124,7 @@ export class KnexStore<User extends BaseUser> extends UserStore<User> {
     return this.userTable()
       .where({ id })
       .update({
-        lastRequest: new Date(),
+        lastRequest: new Date()
       })
   }
 
@@ -136,7 +136,7 @@ export class KnexStore<User extends BaseUser> extends UserStore<User> {
       validationHash: string | null
       validationExpires: Date | null
     },
-    extra: Partial<User> = {},
+    extra: Partial<User> = {}
   ) {
     try {
       var [pkey] = await this.userTable()
@@ -172,7 +172,8 @@ export class KnexStore<User extends BaseUser> extends UserStore<User> {
 
   async queryUserByEmail(email: string) {
     const users: User[] = await this.userTable()
-      .select(...this.fields)
+      //.select(...this.fields)
+      .select()
       .where({ email })
     return users[0]
   }
@@ -182,7 +183,7 @@ export class KnexStore<User extends BaseUser> extends UserStore<User> {
       .where({ id })
       .update({
         resetPwdHash: hash,
-        resetPwdExpires: expires,
+        resetPwdExpires: expires
       })
     return ids[0]
   }
@@ -198,7 +199,7 @@ export class KnexStore<User extends BaseUser> extends UserStore<User> {
     await this.userTable()
       .update({
         resetPwdHash: null,
-        auth: pwdhash,
+        auth: pwdhash
       })
       .where({ resetPwdHash: requestId })
   }
@@ -208,6 +209,9 @@ export class KnexStore<User extends BaseUser> extends UserStore<User> {
       //.select(...this.fields)
       .select()
       .where({ username })
+    if (!out.length && username.indexOf("@") !== -1) {
+      out = this.queryUserByEmail(username)
+    }
     return out[0]
   }
 }
