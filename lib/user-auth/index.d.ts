@@ -52,6 +52,7 @@ export declare class UserAuth<User extends BaseUser = BaseUser> {
         askForValidation: boolean;
         extraFields?: Partial<User>;
     }): Promise<number>;
+    sendNewValidationEmail(userId: number): Promise<void>;
     validateHash(hash: string): Promise<{
         id: number;
         email: string;

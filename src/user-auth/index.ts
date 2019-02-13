@@ -111,7 +111,6 @@ export class UserAuth<User extends BaseUser = BaseUser> {
     }
     this.schema_createUser.validateSync({ ...(opts.extraFields || {}), ...inp }, { strict: true })
     const auth = await this.bcrypt.hash(inp.password, 10)
-    const validationHash = opts.askForValidation ? uuid() : null
 
     let validationExpires = opts.askForValidation
       ? day()
@@ -123,8 +122,8 @@ export class UserAuth<User extends BaseUser = BaseUser> {
       {
         email: inp.email,
         username: inp.username,
-        validationHash,
         auth,
+        validationHash: null,
         validationExpires
       },
       opts.extraFields || {}
@@ -132,19 +131,7 @@ export class UserAuth<User extends BaseUser = BaseUser> {
 
     if (opts.askForValidation) {
       try {
-        const link = this._createValidationLink(validationHash!)
-        if (!this.sendMail) {
-          throw Error("No email setup provided.")
-        }
-        await this.sendMail({
-          email: inp.email,
-          subject: this._validationMailSubject(),
-          html: await this._validationMailHTML({
-            address: inp.email,
-            validationLink: link
-          }),
-          attachment: (await this._validationMailAttachment()) || undefined
-        })
+        await this.sendNewValidationEmail(pkey)
       } catch (err) {
         //fixme use transaction
         await this.userStore.deleteUserId(pkey)
@@ -153,6 +140,26 @@ export class UserAuth<User extends BaseUser = BaseUser> {
     }
 
     return pkey
+  }
+
+  async sendNewValidationEmail(userId: number) {
+    let user = await this.userStore.queryUserById(userId)
+    if (!user) throw Error(messages.user_not_found)
+    const validationHash = uuid()
+    const link = this._createValidationLink(validationHash)
+    await this.userStore.setValidationHash(userId, validationHash)
+    if (!this.sendMail) {
+      throw Error("No email setup provided.")
+    }
+    await this.sendMail({
+      email: user.email,
+      subject: this._validationMailSubject(),
+      html: await this._validationMailHTML({
+        address: user.email,
+        validationLink: link
+      }),
+      attachment: (await this._validationMailAttachment()) || undefined
+    })
   }
 
   async validateHash(hash: string) {

@@ -33,7 +33,9 @@ export abstract class UserStore<User extends BaseUser> {
   abstract queryUserByResetPasswordHash(hash: string): Promise<User | undefined>
   abstract queryUserByEmail(email: string): Promise<undefined | User>
   abstract queryUserByName(name: string): Promise<undefined | User>
+  abstract queryUserById(id: number): Promise<undefined | User>
   abstract clearValidationHash(userId: number): Promise<void>
+  abstract setValidationHash(userId: number, hash: string): Promise<void>
   abstract writeResetPwdRequest(userId: number, hash: string, expires: Date): Promise<number>
   abstract writeNewPassword(requestId: string, pwdhash: string): Promise<void>
 }
@@ -170,6 +172,12 @@ export class KnexStore<User extends BaseUser> extends UserStore<User> {
       .where({ id: userId })
   }
 
+  async setValidationHash(userId: number, hash: string) {
+    await this.userTable()
+      .where({ id: userId })
+      .update({ validationHash: hash })
+  }
+
   async queryUserByEmail(email: string) {
     const users: User[] = await this.userTable()
       //.select(...this.fields)
@@ -212,6 +220,14 @@ export class KnexStore<User extends BaseUser> extends UserStore<User> {
     if (!out && username.indexOf("@") !== -1) {
       out = await this.queryUserByEmail(username)
     }
+    return out
+  }
+
+  async queryUserById(id: number) {
+    let out = (await this.userTable()
+      //.select(...this.fields)
+      .select()
+      .where({ id }))[0]
     return out
   }
 }

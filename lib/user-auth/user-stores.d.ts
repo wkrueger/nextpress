@@ -25,7 +25,9 @@ export declare abstract class UserStore<User extends BaseUser> {
     abstract queryUserByResetPasswordHash(hash: string): Promise<User | undefined>;
     abstract queryUserByEmail(email: string): Promise<undefined | User>;
     abstract queryUserByName(name: string): Promise<undefined | User>;
+    abstract queryUserById(id: number): Promise<undefined | User>;
     abstract clearValidationHash(userId: number): Promise<void>;
+    abstract setValidationHash(userId: number, hash: string): Promise<void>;
     abstract writeResetPwdRequest(userId: number, hash: string, expires: Date): Promise<number>;
     abstract writeNewPassword(requestId: string, pwdhash: string): Promise<void>;
 }
@@ -52,9 +54,11 @@ export declare class KnexStore<User extends BaseUser> extends UserStore<User> {
     deleteUserId(pkey: number): Promise<void>;
     queryUserByValidationHash(hash: string): Promise<any>;
     clearValidationHash(userId: number): Promise<void>;
+    setValidationHash(userId: number, hash: string): Promise<void>;
     queryUserByEmail(email: string): Promise<User>;
     writeResetPwdRequest(id: number, hash: string, expires: Date): Promise<any>;
     queryUserByResetPasswordHash(hash: string): Promise<User | undefined>;
     writeNewPassword(requestId: string, pwdhash: string): Promise<void>;
     queryUserByName(username: string): Promise<any>;
+    queryUserById(id: number): Promise<any>;
 }
