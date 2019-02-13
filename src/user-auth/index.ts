@@ -277,7 +277,7 @@ export class UserAuth<User extends BaseUser = BaseUser> {
     }
     await this.checkAndUpdateUserRequestCap(user.id!, this._getPerUserWaitTime().login)
     const found = await this.validateLogin({
-      username,
+      username: user.username,
       password
     })
     if (!found) {

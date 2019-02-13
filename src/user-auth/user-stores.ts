@@ -205,13 +205,13 @@ export class KnexStore<User extends BaseUser> extends UserStore<User> {
   }
 
   async queryUserByName(username: string) {
-    let out = await this.userTable()
+    let out = (await this.userTable()
       //.select(...this.fields)
       .select()
-      .where({ username })
-    if (!out.length && username.indexOf("@") !== -1) {
-      out = this.queryUserByEmail(username)
+      .where({ username }))[0]
+    if (!out && username.indexOf("@") !== -1) {
+      out = await this.queryUserByEmail(username)
     }
-    return out[0]
+    return out
   }
 }
