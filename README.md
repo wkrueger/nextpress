@@ -18,4 +18,8 @@ Currently bundling:
 - jest
 - with typescript in mind
 
-Decent version woth sharing and real docs are a WIP, check [here](https://wkrueger.github.io/nextpress).
+v2 is definitely a napkin draft. Decent version (v3) worth sharing and real docs are a WIP.
+
+  - Carefully write docs for everything
+  - Decent test coverage
+  - Review best ways to implement each functionality from the ground
