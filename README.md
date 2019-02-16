@@ -4,7 +4,7 @@
 
 Package website things that could become commmon between projects into a module.
 
-Target: monolithic non-scalable deploy for small things, API and UI in the same project and server.
+Target: monolithic non-scalable deploy for small things, API and UI in the same node server.
 
 Trying not to worry much about config options, it is of intention to have one big opinionated monolythic package.
 
