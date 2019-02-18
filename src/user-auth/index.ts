@@ -84,7 +84,7 @@ export class UserAuth<User extends BaseUser = BaseUser> {
   }
 
   private async checkAndUpdateUserRequestCap(userId: number, seconds: number) {
-    if (!userId) throw Error(msg.invalid_input)
+    if (!userId) throw ono({ code: "INVALID_INPUT" }, msg.invalid_input)
     let lastReq = await this.userStore.getLastRequest(userId)
     if (
       !lastReq ||
@@ -95,7 +95,7 @@ export class UserAuth<User extends BaseUser = BaseUser> {
       await this.userStore.writeLastRequest(userId)
       return
     } else {
-      throw Error(msg.try_again_in_a_few_seconds)
+      throw ono({ code: "TRY_AGAIN_IN_SECONDS" }, msg.try_again_in_a_few_seconds)
     }
   }
 
@@ -144,7 +144,8 @@ export class UserAuth<User extends BaseUser = BaseUser> {
 
   async sendNewValidationEmail(userId: number) {
     let user = await this.userStore.queryUserById(userId)
-    if (!user) throw Error(messages.user_not_found)
+    if (!user) throw ono({ code: "USER_NOT_FOUND" }, messages.user_not_found)
+    //if (!user.validationHash) return
     const validationHash = uuid()
     const link = this._createValidationLink(validationHash)
     await this.userStore.setValidationHash(userId, validationHash)
@@ -163,9 +164,9 @@ export class UserAuth<User extends BaseUser = BaseUser> {
   }
 
   async validateHash(hash: string) {
-    if (!hash) throw Error(msg.invalid_hash)
+    if (!hash) throw ono({ code: "INVALID_HASH" }, msg.invalid_hash)
     const found = await this.userStore.queryUserByValidationHash(hash)
-    if (!found) throw Error(msg.invalid_hash)
+    if (!found) throw ono({ code: "INVALID_HASH" }, msg.invalid_hash)
     await this.userStore.clearValidationHash(found.id!)
     return { id: found.id!, email: found.email }
   }
@@ -183,7 +184,7 @@ export class UserAuth<User extends BaseUser = BaseUser> {
     const user = await this.userStore.queryUserByName(inp.username)
     if (!user) return undefined
     const check = await this.bcrypt.compare(inp.password, user.auth!)
-    if (user.validationHash) throw Error(msg.validate_email_first)
+    if (user.validationHash) throw ono({ code: "VALIDATE_EMAIL_FIRST" }, msg.validate_email_first)
     return check ? user : undefined
   }
 
@@ -191,7 +192,7 @@ export class UserAuth<User extends BaseUser = BaseUser> {
     emailSchema.validateSync(inp)
     const requestId = uuid()
     const user = await this.userStore.queryUserByEmail(inp.email)
-    if (!user) throw Error(msg.user_not_found)
+    if (!user) throw ono({ code: "USER_NOT_FOUND" }, msg.user_not_found)
     const storeId = this.userStore.writeResetPwdRequest(
       user.id!,
       requestId,
@@ -202,7 +203,7 @@ export class UserAuth<User extends BaseUser = BaseUser> {
     const link = this._createResetPasswordLink(requestId)
     if (storeId) {
       if (!this.sendMail) {
-        throw Error("No email setup provided.")
+        throw ono({ code: "NO_EMAIL_SETUP" }, "No email setup provided.")
       }
       await this.sendMail({
         email: inp.email,
@@ -224,8 +225,9 @@ export class UserAuth<User extends BaseUser = BaseUser> {
   async performResetPwd(inp: SchemaType<typeof pwdRequestSchema>) {
     pwdRequestSchema.validateSync(inp)
     const found = await this.findResetPwdRequest({ requestId: inp.requestId })
-    if (!found) throw Error(msg.invalid_request)
-    if (inp.pwd1 !== inp.pwd2) throw Error(msg.password_confirmation_failed)
+    if (!found) throw ono({ code: "INVALID_REQUEST" }, msg.invalid_request)
+    if (inp.pwd1 !== inp.pwd2)
+      throw ono({ code: "PASSWORD_CONFIRMATION_FAILED" }, msg.password_confirmation_failed)
     await this.userStore.writeNewPassword(inp.requestId, await this.bcrypt.hash(inp.pwd1, 10))
   }
 
@@ -346,7 +348,7 @@ export class UserAuth<User extends BaseUser = BaseUser> {
         validation: { body: yup.object({ email: yup.string().email() }) }
       }).handler(async req => {
         const user = await this.userStore.queryUserByEmail(req.body.email)
-        if (!user) throw Error(msg.not_found)
+        if (!user) throw ono({ code: "NOT_FOUND" }, msg.not_found)
         await this.checkAndUpdateUserRequestCap(
           user.id!,
           this._getPerUserWaitTime().requestPasswordReset
