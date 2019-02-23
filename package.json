@@ -1,6 +1,6 @@
 {
   "name": "@proerd/nextpress",
-  "version": "2.0.0-dev43",
+  "version": "2.0.0-dev44",
   "main": "lib/index.js",
   "typings": "lib/index.d.ts",
   "dependencies": {
@@ -43,7 +43,7 @@
     "lodash-webpack-plugin": "^0.11.5",
     "minimist": "^1.2.0",
     "morgan": "^1.9.0",
-    "next": "^7.0.0",
+    "next": "^8.0.3",
     "node-sass": "^4.9.2",
     "ono": "^4.0.5",
     "request": "^2.87.0",
