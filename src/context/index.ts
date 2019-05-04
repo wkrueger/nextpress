@@ -29,7 +29,7 @@ export function ContextFactory(i: {
   const pluginOptional = (i.mappers || []).reduce(
     (out, item) => {
       const optionalKeys = item.optionalKeys.map(key => prefixUpper + key)
-      return [...out, ...item.optionalKeys]
+      return [...out, ...optionalKeys]
     },
     [] as string[]
   )
@@ -45,7 +45,9 @@ export function ContextFactory(i: {
       fs.writeFileSync(envfilePath, scaffold)
       throw Error("envfile not found. Fill up the generated one.")
     }
-    dotenv.config({ path: path.resolve(i.projectRoot, prefix + "envfile.env") })
+    dotenv.config({
+      path: path.resolve(i.projectRoot, prefix + "envfile.env")
+    })
   }
   for (let x = 0; x < required.length; x++) {
     const key = required[x]
