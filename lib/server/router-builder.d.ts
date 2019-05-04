@@ -36,21 +36,21 @@ export declare class RouterBuilder {
     };
 }
 export declare type Omit<T, K> = Pick<T, Exclude<keyof T, K>>;
-interface EditedRequestHandler<Replace = {}> {
+export interface EditedRequestHandler<Replace = {}> {
     (req: Omit<expressMod.Request, keyof Replace> & Replace): Promise<Record<string, any>>;
 }
-interface RouteOpts {
+export interface RouteOpts {
     method?: string;
     middleware?: PriorityRequestHandler[];
     validation?: SchemaDict;
     handler?: Function;
 }
-declare type NeverParams = {
+export declare type NeverParams = {
     body: unknown;
     query: unknown;
     params: unknown;
 };
-declare type HandlerType<Opts> = Opts extends {
+export declare type HandlerType<Opts> = Opts extends {
     validation: any;
 } ? EditedRequestHandler<UnwrapSchemaDict<Opts["validation"]>> : EditedRequestHandler<NeverParams>;
 export declare const route: <Opts extends RouteOpts>(opts?: Opts) => {

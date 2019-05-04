@@ -15,7 +15,7 @@ export type ExpressApp = ReturnType<typeof expressMod>
 export class Server {
   constructor(
     public ctx: Nextpress.Context,
-    public isProduction = process.env.NODE_ENV === "production",
+    public isProduction = process.env.NODE_ENV === "production"
   ) {
     if (!ctx.loadedContexts.has("default.website")) {
       throw Error("Server required the default.website context to be used.")
@@ -30,12 +30,12 @@ export class Server {
     useHelmet: true,
     jwtOptions: {
       tokenHeader: "authorization",
-      tokenDuration: 60 * 60 * 24 * 5, //5 days
+      tokenDuration: 60 * 60 * 24 * 5 //5 days
     },
     bundleAnalyzer: {
       analyzeServer: false,
-      analyzeBrowser: true,
-    },
+      analyzeBrowser: true
+    }
   }
 
   private _nextApp?: NextServer
@@ -48,7 +48,7 @@ export class Server {
       this._nextApp = nextjs({
         dev: !this.isProduction,
         dir: this.ctx.projectRoot,
-        conf: this.getNextjsConfig(),
+        conf: this.getNextjsConfig()
       })
     }
     return this._nextApp
@@ -142,7 +142,7 @@ export class Server {
         }
         config.plugins.push(new LodashPlugin())
         return config
-      },
+      }
     }
     let out = this.isProduction
       ? withTypescript(withCSS(withSass(opts)))
@@ -159,14 +159,14 @@ export class Server {
       const redisMod = require("connect-redis")
       const StoreConstructor = redisMod(expressSession)
       return new StoreConstructor({
-        client: this.ctx.redis.instance(),
+        client: this.ctx.redis.instance()
       })
     }
     if (this.ctx.loadedContexts.has("default.database")) {
       const knexMod = require("connect-session-knex")
       const StoreConstructor = knexMod(expressSession)
       return new StoreConstructor({
-        knex: this.ctx.database.db(),
+        knex: this.ctx.database.db()
       })
     }
   }
@@ -175,11 +175,11 @@ export class Server {
     return expressSession({
       secret: this.ctx.website.sessionSecret,
       cookie: {
-        maxAge: 1000 * 60 * 60 * 24 * 7,
+        maxAge: 1000 * 60 * 60 * 24 * 7
       },
       resave: false,
       saveUninitialized: false,
-      store,
+      store
     })
   }
 
@@ -196,7 +196,7 @@ export class Server {
       req.nextpressAuth = new UserAuthJwt(req, {
         headerKey: this.options.jwtOptions.tokenHeader,
         durationSeconds: this.options.jwtOptions.tokenDuration,
-        secret: this.ctx.jwt.secret,
+        secret: this.ctx.jwt.secret
       })
       next()
     }
@@ -209,7 +209,7 @@ interface User {
   email: string
 }
 
-class UserAuthSession {
+export class UserAuthSession {
   constructor(public req: any) {}
 
   async getUser(): Promise<User | undefined> {
@@ -231,10 +231,10 @@ class UserAuthSession {
   }
 }
 
-class UserAuthJwt implements UserAuthSession {
+export class UserAuthJwt implements UserAuthSession {
   constructor(
     public req: any,
-    private opts: { headerKey: string; secret: string; durationSeconds: number },
+    private opts: { headerKey: string; secret: string; durationSeconds: number }
   ) {}
 
   private _user: User | undefined

@@ -16,7 +16,7 @@ export class RouterBuilder {
   static createHandler = (fn: expressMod.RequestHandler): expressMod.RequestHandler => async (
     req,
     res,
-    next,
+    next
   ) => {
     try {
       await fn(req, res, next)
@@ -27,7 +27,7 @@ export class RouterBuilder {
 
   static appendJsonRoutesFromDict<Dict extends Record<string, RouteOpts>>(
     router: expressMod.Router,
-    setup: (i: typeof RouteDictHelper) => Dict,
+    setup: (i: typeof RouteDictHelper) => Dict
   ) {
     const routeDict = setup(RouteDictHelper)
     Object.keys(routeDict).forEach(key => {
@@ -63,7 +63,7 @@ export class RouterBuilder {
    */
   async createHtmlRouter(
     callback?: ({ router }: { router: expressMod.Router }) => Promise<void>,
-    options: { noNextJs?: boolean } = {},
+    options: { noNextJs?: boolean } = {}
   ) {
     const router = expressMod.Router()
     if (callback) {
@@ -72,7 +72,7 @@ export class RouterBuilder {
     if (this.server.options.errorRoute) {
       const errorMw: expressMod.ErrorRequestHandler = (err, req, res, next) => {
         this.server.getNextApp().render(req, res, this.server.options.errorRoute, {
-          message: String(err),
+          message: String(err)
         })
       }
       router.use(errorMw)
@@ -99,7 +99,7 @@ export class RouterBuilder {
   }
 
   async opinionatedJsonRouter<Dict extends Record<string, RouteOpts>>(
-    setup: (i: typeof RouteDictHelper) => Dict,
+    setup: (i: typeof RouteDictHelper) => Dict
   ) {
     return this.createJsonRouter(async ({ router }) => {
       return RouterBuilder.appendJsonRoutesFromDict(router, setup)
@@ -110,7 +110,7 @@ export class RouterBuilder {
     err: any,
     _req: expressMod.Request,
     res: expressMod.Response,
-    next: expressMod.NextFunction,
+    next: expressMod.NextFunction
   ) {
     try {
       console.error(err)
@@ -134,20 +134,20 @@ export class RouterBuilder {
 
 export type Omit<T, K> = Pick<T, Exclude<keyof T, K>>
 
-interface EditedRequestHandler<Replace = {}> {
+export interface EditedRequestHandler<Replace = {}> {
   (req: Omit<expressMod.Request, keyof Replace> & Replace): Promise<Record<string, any>>
 }
 
-interface RouteOpts {
+export interface RouteOpts {
   method?: string
   middleware?: PriorityRequestHandler[]
   validation?: SchemaDict
   handler?: Function
 }
 
-type NeverParams = { body: unknown; query: unknown; params: unknown }
+export type NeverParams = { body: unknown; query: unknown; params: unknown }
 
-type HandlerType<Opts> = Opts extends { validation: any }
+export type HandlerType<Opts> = Opts extends { validation: any }
   ? EditedRequestHandler<UnwrapSchemaDict<Opts["validation"]>>
   : EditedRequestHandler<NeverParams>
 
@@ -155,7 +155,7 @@ export const route = <Opts extends RouteOpts>(opts: Opts = {} as any) => {
   return {
     handler: (fn: HandlerType<Opts>): RouteOpts => {
       return Object.assign(opts, { handler: fn })
-    },
+    }
   }
 }
 
@@ -187,7 +187,7 @@ export const validateRequest = (opts: RouteOpts["validation"]) => {
 
 const RouteDictHelper = {
   route,
-  yup,
+  yup
 }
 
 type UnwrapSchema<T> = T extends yup.ObjectSchema<infer R> ? R : unknown
