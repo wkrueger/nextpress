@@ -42,11 +42,24 @@ export class RouterBuilder {
         if (a.priority! > b.priority!) return 1
         return 0
       })
-      let fn: expressMod.RequestHandler = async (req, res) => {
-        let result = await routeOpts.handler!(req)
-        res.send(result)
+      let fn: expressMod.RequestHandler = async (req, res, next) => {
+        try {
+          var result: any
+          if (routeOpts.withTransaction) {
+            await routeOpts.withTransaction.database.db().transaction(async trx => {
+              req.transaction = trx
+              result = await routeOpts.handler!(req)
+            })
+          } else {
+            result = await routeOpts.handler!(req)
+          }
+
+          res.send(result)
+        } catch (err) {
+          next(err)
+        }
       }
-      router[method](key, ...mw, RouterBuilder.createHandler(fn))
+      router[method](key, ...mw, fn)
     })
   }
 
@@ -143,6 +156,7 @@ export interface RouteOpts {
   middleware?: PriorityRequestHandler[]
   validation?: SchemaDict
   handler?: Function
+  withTransaction?: Nextpress.Context
 }
 
 export type NeverParams = { body: unknown; query: unknown; params: unknown }

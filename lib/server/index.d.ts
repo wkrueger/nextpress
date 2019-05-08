@@ -72,6 +72,7 @@ declare global {
     namespace Express {
         interface Request {
             nextpressAuth: UserAuthSession | UserAuthJwt;
+            transaction: import("knex").Transaction;
         }
     }
 }

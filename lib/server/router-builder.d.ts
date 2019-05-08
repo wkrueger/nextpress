@@ -44,6 +44,7 @@ export interface RouteOpts {
     middleware?: PriorityRequestHandler[];
     validation?: SchemaDict;
     handler?: Function;
+    withTransaction?: Nextpress.Context;
 }
 export declare type NeverParams = {
     body: unknown;
