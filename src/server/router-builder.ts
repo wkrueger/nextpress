@@ -39,7 +39,7 @@ export class RouterBuilder {
   }
 
   static getHandler(routeOpts: RouteOpts) {
-    let mw = routeOpts.middleware || []
+    let mw = [...(routeOpts.middleware || [])] || []
     if (routeOpts.validation) {
       mw.push(validateRequest(routeOpts.validation))
     }
@@ -50,16 +50,7 @@ export class RouterBuilder {
     })
     let fn: expressMod.RequestHandler = async (req, res, next) => {
       try {
-        var result: any
-        if (routeOpts.withTransaction) {
-          await routeOpts.withTransaction.database.db().transaction(async trx => {
-            req.transaction = trx
-            result = await routeOpts.handler!(req)
-          })
-        } else {
-          result = await routeOpts.handler!(req)
-        }
-
+        const result = this.getResult(routeOpts, req)
         res.send(result)
       } catch (err) {
         next(err)
@@ -69,6 +60,19 @@ export class RouterBuilder {
       middleware: mw,
       handler: fn
     }
+  }
+
+  static async getResult(routeOpts: RouteOpts, req: any) {
+    var result: any
+    if (routeOpts.withTransaction) {
+      await routeOpts.withTransaction.database.db().transaction(async trx => {
+        req.transaction = trx
+        result = await routeOpts.handler!(req)
+      })
+    } else {
+      result = await routeOpts.handler!(req)
+    }
+    return result
   }
 
   nextMw = RouterBuilder.createHandler((req, res) => {

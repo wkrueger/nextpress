@@ -15,6 +15,7 @@ export declare class RouterBuilder {
         middleware: PriorityRequestHandler[];
         handler: expressMod.RequestHandler;
     };
+    static getResult(routeOpts: RouteOpts, req: any): Promise<any>;
     nextMw: expressMod.RequestHandler;
     /**
      * creates a router suited for next.js html/react routes;
