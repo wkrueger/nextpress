@@ -11,6 +11,10 @@ export declare class RouterBuilder {
      */
     static createHandler: (fn: expressMod.RequestHandler) => expressMod.RequestHandler;
     static appendJsonRoutesFromDict<Dict extends Record<string, RouteOpts>>(router: expressMod.Router, setup: (i: typeof RouteDictHelper) => Dict): void;
+    static getHandler(routeOpts: RouteOpts): {
+        middleware: PriorityRequestHandler[];
+        handler: expressMod.RequestHandler;
+    };
     nextMw: expressMod.RequestHandler;
     /**
      * creates a router suited for next.js html/react routes;

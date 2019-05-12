@@ -91,7 +91,7 @@ export class UserAuth {
 
   private async checkAndUpdateUserRequestCap(userId: number, seconds: number) {
     if (!userId) throw Error("Invalid input.")
-    let lastReq = await this.userStore.getLastRequest(userId)
+    let lastReq = seconds && (await this.userStore.getLastRequest(userId))
     if (
       !lastReq ||
       day(lastReq)

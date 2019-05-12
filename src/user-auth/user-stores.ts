@@ -122,9 +122,7 @@ export class KnexStore extends UserStore {
     validationExpires: Date | null
   }) {
     try {
-      var [pkey] = await this.userTable()
-        .insert(i)
-        .into("user")
+      var [pkey] = await this.userTable().insert(i)
       return pkey
     } catch (err) {
       if ((err.errno || "") === 1062) {

@@ -33,34 +33,42 @@ export class RouterBuilder {
     Object.keys(routeDict).forEach(key => {
       let routeOpts = routeDict[key]
       let method: "get" | "post" | "put" | "delete" = routeOpts.method || ("post" as any)
-      let mw = routeOpts.middleware || []
-      if (routeOpts.validation) {
-        mw.push(validateRequest(routeOpts.validation))
-      }
-      mw.sort((a, b) => {
-        if (a.priority! < b.priority!) return -1
-        if (a.priority! > b.priority!) return 1
-        return 0
-      })
-      let fn: expressMod.RequestHandler = async (req, res, next) => {
-        try {
-          var result: any
-          if (routeOpts.withTransaction) {
-            await routeOpts.withTransaction.database.db().transaction(async trx => {
-              req.transaction = trx
-              result = await routeOpts.handler!(req)
-            })
-          } else {
-            result = await routeOpts.handler!(req)
-          }
-
-          res.send(result)
-        } catch (err) {
-          next(err)
-        }
-      }
-      router[method](key, ...mw, fn)
+      const { middleware, handler } = this.getHandler(routeOpts)
+      router[method](key, ...middleware, handler)
     })
+  }
+
+  static getHandler(routeOpts: RouteOpts) {
+    let mw = routeOpts.middleware || []
+    if (routeOpts.validation) {
+      mw.push(validateRequest(routeOpts.validation))
+    }
+    mw.sort((a, b) => {
+      if (a.priority! < b.priority!) return -1
+      if (a.priority! > b.priority!) return 1
+      return 0
+    })
+    let fn: expressMod.RequestHandler = async (req, res, next) => {
+      try {
+        var result: any
+        if (routeOpts.withTransaction) {
+          await routeOpts.withTransaction.database.db().transaction(async trx => {
+            req.transaction = trx
+            result = await routeOpts.handler!(req)
+          })
+        } else {
+          result = await routeOpts.handler!(req)
+        }
+
+        res.send(result)
+      } catch (err) {
+        next(err)
+      }
+    }
+    return {
+      middleware: mw,
+      handler: fn
+    }
   }
 
   nextMw = RouterBuilder.createHandler((req, res) => {
