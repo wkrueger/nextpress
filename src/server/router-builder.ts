@@ -50,7 +50,7 @@ export class RouterBuilder {
     })
     let fn: expressMod.RequestHandler = async (req, res, next) => {
       try {
-        const result = this.getResult(routeOpts, req)
+        const result = await this.getResult(routeOpts, req)
         res.send(result)
       } catch (err) {
         next(err)
