@@ -5,6 +5,7 @@ import path = require("path")
 const args = parseArgs(process.argv)
 import shell = require("shelljs")
 import { Server } from "./server"
+import fs = require("fs")
 
 if (args.scaffold) {
   const root = process.cwd()
@@ -35,6 +36,22 @@ async function prebuild() {
       return
     }
     let context = serverClass.getDefaultContext()
+    //try packaged build
+    try {
+      try {
+        shell.exec("rm -rf .next")
+      } catch (err) {}
+      const hash = shell.exec("git rev-parse HEAD").stdout
+      const tarPath = context.pathFromRoot("_prebuilt", String(hash).trim() + ".tar.gz")
+      fs.statSync(tarPath)
+      shell.exec(`tar xzf ${tarPath}`)
+      console.log("Sucessfully extracted from packaged build.")
+      process.exit(0)
+      return
+    } catch (_a) {
+      console.log("Couldnt find packaged build, building now.")
+    }
+
     let server = new serverClass(context)
     server.isProduction = true
     await server.buildForProduction()

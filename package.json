@@ -1,6 +1,6 @@
 {
   "name": "@proerd/nextpress",
-  "version": "2.0.0-dev44",
+  "version": "2.1.1",
   "main": "lib/index.js",
   "typings": "lib/index.d.ts",
   "dependencies": {
@@ -11,7 +11,7 @@
     "@types/enzyme-adapter-react-16": "^1.0.3",
     "@types/express": "*",
     "@types/ioredis": "^3.2.13",
-    "@types/jest": "^23.3.1",
+    "@types/jest": "*",
     "@types/jsonwebtoken": "^7.2.8",
     "@types/knex": "*",
     "@types/next": "*",
@@ -37,7 +37,7 @@
     "fork-ts-checker-webpack-plugin": "^0.4.9",
     "helmet": "^3.13.0",
     "inline-css": "^2.4.1",
-    "jest": "^23.4.2",
+    "jest": "^24.8.0",
     "jsonwebtoken": "^8.3.0",
     "knex": "^0.14.6",
     "lodash-webpack-plugin": "^0.11.5",
