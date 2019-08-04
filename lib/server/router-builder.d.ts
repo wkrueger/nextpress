@@ -48,7 +48,7 @@ export declare class RouterBuilder {
 }
 export declare type Omit<T, K> = Pick<T, Exclude<keyof T, K>>;
 interface EditedRequestHandler<Replace = {}> {
-    (req: Omit<expressMod.Request, keyof Replace> & Replace): Promise<Record<string, any>>;
+    (req: Omit<expressMod.Request, keyof Replace> & Replace, resp: expressMod.Response): Promise<Record<string, any>>;
 }
 export interface RouteOpts {
     method?: string;
