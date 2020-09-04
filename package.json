@@ -45,7 +45,7 @@
     "lodash-webpack-plugin": "^0.11.5",
     "minimist": "^1.2.0",
     "next": "^7.0.2",
-    "node-sass": "^4.11.0",
+    "node-sass": "^4.13.1",
     "ono": "^4.0.11",
     "rimraf": "^2.6.2",
     "shelljs": "^0.8.3",
